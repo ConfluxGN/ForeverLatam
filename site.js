@@ -879,7 +879,7 @@ void main(){
   const saveLive = () => { try { localStorage.setItem('fl_live', JSON.stringify({ t: Date.now(), v: Object.fromEntries(LIVE) })); } catch {} };
   const paintLive = (login) => { const pin = pins.get(login); if (pin) { const v = LIVE.get(login); pin.classList.toggle('is-live', v === true); pin.classList.toggle('is-off', v === false); } };
   const pollLive = async () => {
-    if (document.hidden || polling) return;
+    if (document.hidden || polling || !live().length) return;
     polling = true; lastPoll = Date.now();
     try {
       const r = await fetch('live.json?t=' + Math.floor(Date.now() / 30000), { cache: 'no-store' });
