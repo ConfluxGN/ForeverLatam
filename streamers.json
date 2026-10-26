@@ -1,5 +1,26 @@
 [
  {
+  "twitch": "chivopesado",
+  "name": "Chivopesado",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/043bbd1e-13d7-4161-8fe8-cbd08fdb69cd-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/p/DegzfckRWhw",
+   "youtube": "https://www.youtube.com/channel/UCrObrOGlZ0iUbX2ZK_h7_dg",
+   "kick": "https://kick.com/chivopesado"
+  },
+  "lat": -34.49,
+  "lon": -58.5,
+  "country": "Argentina",
+  "country_code": "ARG",
+  "country_iso2": "AR",
+  "province": "Buenos Aires",
+  "province_id": "p1725",
+  "city": "Martínez",
+  "nationality": "VE",
+  "tz": "America/Argentina/Buenos_Aires",
+  "age": 34
+ },
+ {
   "twitch": "cizalau",
   "name": "Ciza",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/8b240a7e-d796-4df8-bef8-896f5461ee8f-profile_image-300x300.png",
@@ -36,6 +57,46 @@
   "city": "",
   "nationality": "MX",
   "tz": "America/Mexico_City"
+ },
+ {
+  "twitch": "eliplays92",
+  "name": "Eli",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/30829510-90d9-4bd1-afd7-9add5c67f73d-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/eliplays92",
+   "youtube": "https://www.youtube.com/@EliPlays92"
+  },
+  "lat": 3.9034,
+  "lon": -73.077,
+  "country": "Colombia",
+  "country_code": "COL",
+  "country_iso2": "CO",
+  "province": "",
+  "province_id": "",
+  "city": "",
+  "nationality": "VE",
+  "tz": "America/Bogota",
+  "age": 34
+ },
+ {
+  "twitch": "elmelmman",
+  "name": "Melmman",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/6a1cbce3-ba67-42af-9108-e322728d296c-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/elmelmman",
+   "youtube": "https://www.youtube.com/@elmelmman"
+  },
+  "lat": 21.1619,
+  "lon": -86.8515,
+  "country": "México",
+  "country_code": "MEX",
+  "country_iso2": "MX",
+  "province": "Quintana Roo",
+  "province_id": "p1268",
+  "city": "Cancún",
+  "nationality": "MX",
+  "tz": "America/Cancun",
+  "age": 29
  },
  {
   "twitch": "gamer_ryna",
