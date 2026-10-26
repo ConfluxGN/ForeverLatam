@@ -783,7 +783,7 @@ void main(){
         let moved = true;
         while (moved && lift < 400) { moved = false; for (const q of placed) if (Math.abs(q.x - x) < 165 && Math.abs((q.y - q.lift) - (y - lift)) < 42) { lift += 44; moved = true; } }
       }
-      if (e._st.lift !== lift) { e._st.lift = lift; e.style.setProperty('--lift', lift + 'px'); }
+      if (e._st.lift !== lift) { e._st.lift = lift; const pl = e._pill || (e._pill = e.querySelector('.pill')), sm = e._stem || (e._stem = e.querySelector('.pin-stem')); if (pl) pl.style.translate = lift ? '0 ' + (-lift) + 'px' : ''; if (sm) sm.style.transform = lift ? 'scaleY(' + ((24 + lift) / 24) + ')' : ''; }
       placed.push({ x, y, lift });
     }
     const chipT = provMode ? 'Vista: provincias' : 'Vista: países';

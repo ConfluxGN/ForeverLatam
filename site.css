@@ -182,8 +182,8 @@ body.public .top, body.public .panel, body.public .chip, body.public .zoom { dis
 body.public { overflow: hidden; }
 html, body { margin: 0; }
 [hidden] { display: none !important; }
-.pin-stem { height: calc(24px + var(--lift, 0px)); }
-.pill, .card { bottom: calc(27px + var(--lift, 0px)); }
+.pin-stem { transform-origin: 50% 100%; }
+.pill, .card { bottom: 27px; }
 .pin.below .card { bottom: auto; top: 12px; }
 .pin.below .pin-stem { display: none; }
 .back { display: none; position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); z-index: 20; }
