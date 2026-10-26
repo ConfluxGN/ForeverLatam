@@ -65,6 +65,26 @@
   "age": 39
  },
  {
+  "twitch": "dalfras",
+  "name": "Dalfras",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/f2deb311-4fcf-4359-b5e5-eeb937a86941-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/dalfras",
+   "tiktok": "https://www.tiktok.com/@dalfras"
+  },
+  "lat": 21.125,
+  "lon": -101.686,
+  "country": "México",
+  "country_code": "MEX",
+  "country_iso2": "MX",
+  "province": "Guanajuato",
+  "province_id": "p4204",
+  "city": "León",
+  "nationality": "MX",
+  "tz": "America/Mexico_City",
+  "age": 27
+ },
+ {
   "twitch": "dulcegema_",
   "name": "Dulcegema_",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/7d08e093-809f-48fa-9aeb-97dac3b43caa-profile_image-300x300.png",
@@ -121,6 +141,26 @@
   "nationality": "MX",
   "tz": "America/Cancun",
   "age": 29
+ },
+ {
+  "twitch": "friiigg",
+  "name": "Frigg",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/18f0a8d6-9cc9-4f0b-a717-5f584ee02832-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/friiigg_",
+   "youtube": "https://www.youtube.com/@friigg",
+   "kick": "https://kick.com/friigg"
+  },
+  "lat": -27.4692,
+  "lon": -58.8306,
+  "country": "Argentina",
+  "country_code": "ARG",
+  "country_iso2": "AR",
+  "province": "Corrientes",
+  "province_id": "p749",
+  "city": "Corrientes",
+  "nationality": "AR",
+  "tz": "America/Argentina/Cordoba"
  },
  {
   "twitch": "gamer_ryna",
@@ -185,6 +225,27 @@
   "age": 25
  },
  {
+  "twitch": "meiirel",
+  "name": "Meiirel",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/ac17695c-f4c0-468f-b3e0-058df48bb938-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/meiiirel",
+   "tiktok": "https://www.tiktok.com/@meiirel",
+   "x": "https://x.com/meiiirel"
+  },
+  "lat": -34.9011,
+  "lon": -56.1645,
+  "country": "Uruguay",
+  "country_code": "URY",
+  "country_iso2": "UY",
+  "province": "Montevideo",
+  "province_id": "p1740",
+  "city": "Montevideo",
+  "nationality": "UY",
+  "tz": "America/Montevideo",
+  "age": 28
+ },
+ {
   "twitch": "psychometal_dev",
   "name": "PsychoMetal",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/4624bf96-6301-4be3-a498-967d380626c4-profile_image-300x300.png",
@@ -217,6 +278,23 @@
   "city": "",
   "nationality": "DO",
   "tz": "America/Santo_Domingo"
+ },
+ {
+  "twitch": "xxfelpitasxx",
+  "name": "xxfelpitasxx",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/3eff1aa7-f84f-42b2-b49b-432c20be805d-profile_image-300x300.png",
+  "socials": {},
+  "lat": 4.711,
+  "lon": -74.0721,
+  "country": "Colombia",
+  "country_code": "COL",
+  "country_iso2": "CO",
+  "province": "Bogotá",
+  "province_id": "p3781",
+  "city": "",
+  "nationality": "CO",
+  "tz": "America/Bogota",
+  "age": 35
  },
  {
   "twitch": "zippyt3d",
