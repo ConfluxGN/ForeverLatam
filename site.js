@@ -842,27 +842,24 @@ void main(){
     if (S.open) closeCard();
   });
 
-  // estado en directo (decapi.me, sin claves; si falla simplemente no se muestra)
+  // estado en directo: lee live.json, que actualiza cada 5 min la API oficial de Twitch (en-directo.yml)
   const LIVE = new Map();
   try { const c = JSON.parse(localStorage.getItem('fl_live') || 'null'); if (c && Date.now() - c.t < 15 * 60000) for (const k in c.v) LIVE.set(k, !!c.v[k]); } catch {}
   const saveLive = () => { try { localStorage.setItem('fl_live', JSON.stringify({ t: Date.now(), v: Object.fromEntries(LIVE) })); } catch {} };
   const paintLive = (login) => { const pin = pins.get(login); if (pin) { const v = LIVE.get(login); pin.classList.toggle('is-live', v === true); pin.classList.toggle('is-off', v === false); } };
-  const checkLive = async (login) => {
-    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 10000);
-    try {
-      const r = await fetch('https://decapi.me/twitch/uptime/' + encodeURIComponent(login) + '?offline_msg=__off__', { cache: 'no-store', signal: ac.signal });
-      const t = (await r.text()).trim();
-      const v = t === '__off__' ? false : /^\d+\s+(second|minute|hour|day|week)/i.test(t) ? true : null;
-      if (v === null) LIVE.delete(login); else LIVE.set(login, v);
-    } catch { return; } finally { clearTimeout(to); }
-    paintLive(login);
-  };
-  let polling = false, lastPoll = 0;
   const pollLive = async () => {
     if (document.hidden || polling) return;
     polling = true; lastPoll = Date.now();
-    try { await Promise.all(live().map((p) => checkLive(p.twitch))); saveLive(); } finally { polling = false; }
+    try {
+      const r = await fetch('live.json?t=' + Math.floor(Date.now() / 30000), { cache: 'no-store' });
+      const d = await r.json();
+      if (Date.now() - Date.parse(d.t) > 20 * 60000) throw 0; // dato caducado: mejor no mostrar nada que mostrar algo falso
+      const on = new Set(d.live);
+      for (const p of live()) { LIVE.set(p.twitch, on.has(p.twitch)); paintLive(p.twitch); }
+      saveLive();
+    } catch { for (const p of live()) { LIVE.delete(p.twitch); paintLive(p.twitch); } } finally { polling = false; }
   };
+  let polling = false, lastPoll = 0;
   const needLive = () => { if (Date.now() - lastPoll > 20000 && live().some((p) => !LIVE.has(p.twitch))) pollLive(); };
   setInterval(pollLive, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); });
