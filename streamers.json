@@ -1,5 +1,25 @@
 [
  {
+  "twitch": "cizalau",
+  "name": "Ciza",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/8b240a7e-d796-4df8-bef8-896f5461ee8f-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/cizalau",
+   "youtube": "https://www.youtube.com/channel/UCy7SsLurPl_eajxkPA8Uf1w"
+  },
+  "lat": -32.0738,
+  "lon": -63.767,
+  "country": "Argentina",
+  "country_code": "ARG",
+  "country_iso2": "AR",
+  "province": "Córdoba",
+  "province_id": "p3856",
+  "city": "",
+  "nationality": "AR",
+  "tz": "America/Argentina/Buenos_Aires",
+  "age": 35
+ },
+ {
   "twitch": "dulcegema_",
   "name": "Dulcegema_",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/7d08e093-809f-48fa-9aeb-97dac3b43caa-profile_image-300x300.png",
@@ -16,6 +36,49 @@
   "city": "",
   "nationality": "MX",
   "tz": "America/Mexico_City"
+ },
+ {
+  "twitch": "gamer_ryna",
+  "name": "Riscel",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/d5340846-97b5-482a-9989-6c04326418ed-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/gamer_ryna",
+   "youtube": "https://www.youtube.com/@gamer_ryna",
+   "tiktok": "https://www.tiktok.com/@rynac09"
+  },
+  "lat": 9.9764,
+  "lon": -84.1901,
+  "country": "Costa Rica",
+  "country_code": "CRI",
+  "country_iso2": "CR",
+  "province": "",
+  "province_id": "",
+  "city": "",
+  "nationality": "",
+  "tz": "America/Costa_Rica"
+ },
+ {
+  "twitch": "ladyashbringer",
+  "name": "Ash",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/ebdaa60b-1a7e-4d67-8205-700fda57a3fa-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/los_fieles_seguidores_de_ashe",
+   "youtube": "https://www.youtube.com/@LadyAshbringer",
+   "tiktok": "https://www.tiktok.com/@ash_11060",
+   "x": "https://x.com/ashuu1121",
+   "kick": "https://kick.com/ladyashbringer"
+  },
+  "lat": -34.6502,
+  "lon": -58.453,
+  "country": "Argentina",
+  "country_code": "ARG",
+  "country_iso2": "AR",
+  "province": "Ciudad de Buenos Aires",
+  "province_id": "p1745",
+  "city": "",
+  "nationality": "AR",
+  "tz": "America/Argentina/Buenos_Aires",
+  "age": 25
  },
  {
   "twitch": "psychometal_dev",
@@ -50,5 +113,24 @@
   "city": "",
   "nationality": "DO",
   "tz": "America/Santo_Domingo"
+ },
+ {
+  "twitch": "zippyt3d",
+  "name": "Zippy",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/9c3ba9cc-1292-43d2-b822-dc0f13ed598b-profile_image-300x300.png",
+  "socials": {
+   "tiktok": "https://www.tiktok.com/@zippyt3d"
+  },
+  "lat": 10.4749,
+  "lon": -66.9836,
+  "country": "Venezuela",
+  "country_code": "VEN",
+  "country_iso2": "VE",
+  "province": "Distrito Capital",
+  "province_id": "p3216",
+  "city": "Caracas",
+  "nationality": "VE",
+  "tz": "America/Caracas",
+  "age": 31
  }
 ]
