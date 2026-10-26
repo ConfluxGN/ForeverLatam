@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ForeverLatam</title>
+<meta name="description" content="Streamers en el mapa: girá la Tierra y encontrá a cada uno.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Alegreya+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&family=Noto+Color+Emoji&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
+<link rel="icon" href="favicon.ico?v=3" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
+<link rel="stylesheet" href="site.css?v=20261026a">
+</head>
+<body class="public" data-mode="public">
+<div class="app">
+  <header class="top">
+    <div>
+      <h1>Forever<b>Latam</b></h1>
+      <p class="sum" id="sum">Cargando el listado…</p>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btn-add" type="button" hidden>+ Agregar streamer</button>
+      <button class="btn" id="btn-hist" type="button" hidden>Historial</button>
+      <button class="btn" id="btn-trash" type="button" hidden>Papelera <span class="badge" id="trash-n">0</span></button>
+      <button class="btn" id="btn-export" type="button" hidden>Exportar copia</button>
+      <button class="btn" id="btn-import" type="button" hidden>Importar copia</button>
+      <button class="btn" id="btn-preview" type="button" hidden>Ver como visitante</button>
+      <button class="btn" id="btn-logout" type="button" hidden>Salir</button>
+      <input type="file" id="import-file" accept="application/json,.json" hidden>
+    </div>
+  </header>
+  <main class="layout">
+    <section class="stage" id="stage" aria-label="Globo terráqueo">
+      <canvas id="globe-gl" aria-hidden="true"></canvas>
+      <canvas id="globe"></canvas>
+      <div class="labels" id="labels"></div>
+      <div class="loading" id="loading">Cargando mapa…</div>
+      <div class="pickbar" id="pickbar" hidden><span>Tocá el globo donde vive</span><button type="button" id="pick-cancel">Cancelar</button></div>
+      <div class="chip" id="chip">Vista: países</div>
+      <button class="btn primary back" id="btn-back" type="button">Volver al panel</button>
+      <div class="zoom"><button type="button" id="zin" aria-label="Acercar">+</button><button type="button" id="zout" aria-label="Alejar">−</button></div>
+    </section>
+    <aside class="panel">
+      <div class="panel-head">
+        <h2>Listado</h2>
+        <input class="search" id="q" type="search" placeholder="Buscar por nombre, país o provincia" aria-label="Buscar">
+      </div>
+      <ul class="roster" id="roster"></ul>
+    </aside>
+  </main>
+</div>
+
+<div class="overlay" id="overlay" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" hidden><span id="toast-msg"></span><button type="button" id="toast-btn"></button></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="site.js?v=20261026a"></script>
+</body>
+</html>

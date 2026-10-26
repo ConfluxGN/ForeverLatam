@@ -1,0 +1,36 @@
+[
+ {
+  "twitch": "psychometal_dev",
+  "name": "PsychoMetal",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/4624bf96-6301-4be3-a498-967d380626c4-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/psychometal_rx"
+  },
+  "lat": -33.742,
+  "lon": -66.0344,
+  "country": "Argentina",
+  "country_code": "ARG",
+  "country_iso2": "AR",
+  "province": "San Luis",
+  "province_id": "p3854",
+  "city": "",
+  "nationality": "ES",
+  "tz": "America/Argentina/Buenos_Aires"
+ },
+ {
+  "twitch": "wallsides",
+  "name": "Wally",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/4529bdf1-2409-4739-8ef3-b85e3d303a63-profile_image-300x300.png",
+  "socials": {},
+  "lat": 18.8421,
+  "lon": -70.1321,
+  "country": "República Dominicana",
+  "country_code": "DOM",
+  "country_iso2": "DO",
+  "province": "",
+  "province_id": "",
+  "city": "",
+  "nationality": "DO",
+  "tz": "America/Santo_Domingo"
+ }
+]
