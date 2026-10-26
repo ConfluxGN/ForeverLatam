@@ -225,6 +225,26 @@
   "age": 25
  },
  {
+  "twitch": "liufei_tv",
+  "name": "LiuFei_tv",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/c55da016-ad29-4a55-a646-9c31496846ab-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/liufei.tv",
+   "youtube": "https://www.youtube.com/@LiuFei_tv",
+   "tiktok": "https://www.tiktok.com/@liufei_tv"
+  },
+  "lat": 6.6437,
+  "lon": -73.6536,
+  "country": "Colombia",
+  "country_code": "COL",
+  "country_iso2": "CO",
+  "province": "Santander",
+  "province_id": "p3782",
+  "city": "",
+  "nationality": "",
+  "tz": "America/Bogota"
+ },
+ {
   "twitch": "meiirel",
   "name": "Meiirel",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/ac17695c-f4c0-468f-b3e0-058df48bb938-profile_image-300x300.png",
@@ -278,6 +298,26 @@
   "city": "",
   "nationality": "DO",
   "tz": "America/Santo_Domingo"
+ },
+ {
+  "twitch": "xureshix",
+  "name": "Ureshi",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/d947bde5-240d-4156-81b8-2485d6e98d08-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/x_ureshi_x",
+   "facebook": "https://www.facebook.com/xUreshix",
+   "x": "https://x.com/x_Ureshi_x"
+  },
+  "lat": 25.6866,
+  "lon": -100.3161,
+  "country": "México",
+  "country_code": "MEX",
+  "country_iso2": "MX",
+  "province": "Nuevo León",
+  "province_id": "p1263",
+  "city": "Monterrey",
+  "nationality": "GT",
+  "tz": "America/Monterrey"
  },
  {
   "twitch": "xxfelpitasxx",
