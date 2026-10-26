@@ -41,6 +41,30 @@
   "age": 35
  },
  {
+  "twitch": "dalexochoa",
+  "name": "DalexOchoa",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/2987da71-0917-4017-9253-9a40b6407db8-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/dalexochoa21",
+   "youtube": "https://www.youtube.com/@DalexOchoa21",
+   "tiktok": "https://www.tiktok.com/@dalexochoa21",
+   "facebook": "https://www.facebook.com/DalexOchoa",
+   "x": "https://x.com/Dalex21_9",
+   "kick": "https://kick.com/dalexochoa21"
+  },
+  "lat": -33.1232,
+  "lon": -64.3499,
+  "country": "Argentina",
+  "country_code": "ARG",
+  "country_iso2": "AR",
+  "province": "Córdoba",
+  "province_id": "p3856",
+  "city": "Río Cuarto",
+  "nationality": "AR",
+  "tz": "America/Argentina/Buenos_Aires",
+  "age": 39
+ },
+ {
   "twitch": "dulcegema_",
   "name": "Dulcegema_",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/7d08e093-809f-48fa-9aeb-97dac3b43caa-profile_image-300x300.png",
@@ -117,6 +141,25 @@
   "city": "",
   "nationality": "",
   "tz": "America/Costa_Rica"
+ },
+ {
+  "twitch": "isjhosie",
+  "name": "IsJhoSie",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/19906e0d-dcb1-4da6-8402-dedfc81df569-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/isjhosie/"
+  },
+  "lat": 41.5454,
+  "lon": -8.4229,
+  "country": "Portugal",
+  "country_code": "PRT",
+  "country_iso2": "PT",
+  "province": "Braga",
+  "province_id": "p1692",
+  "city": "Braga",
+  "nationality": "VE",
+  "tz": "Europe/Lisbon",
+  "age": 33
  },
  {
   "twitch": "ladyashbringer",

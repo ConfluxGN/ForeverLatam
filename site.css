@@ -92,7 +92,7 @@ button, input, select { font: inherit; color: inherit; }
 .pill-txt span { color: var(--muted); font-size: 11px; }
 .pill-more { width: 20px; height: 20px; border-radius: 50%; border: 0; background: var(--accent-soft); color: var(--accent); font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
 @media (prefers-reduced-motion: no-preference) {
-  .bob { animation: bob 3.4s ease-in-out infinite alternate; }
+  .bob { }
   @keyframes bob { from { translate: 0 0; } to { translate: 0 -5px; } }
   @keyframes pop { from { transform: translateX(calc(-50% + var(--shift, 0px))) scale(.92); opacity: .4; } to { transform: translateX(calc(-50% + var(--shift, 0px))) scale(1); opacity: 1; } }
 }
@@ -241,7 +241,7 @@ body.preview .back { display: inline-flex; }
 /* Indicador de directo: verde = en directo, rojo = desconectado */
 .pill-live, .card-live { display: none; }
 .pin.is-live .pill-live, .pin.is-off .pill-live { display: block; position: absolute; left: 4px; top: 4px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid #f6ead0; z-index: 1; }
-.pin.is-live .pill-live { background: #2fa84f; animation: livepulse 1.8s infinite; }
+.pin.is-live .pill-live { background: #2fa84f; }
 .pin.is-off .pill-live { background: #d23b3b; }
 .pin.is-live .card-live, .pin.is-off .card-live { display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; padding: 1px 7px 1px 6px; border-radius: 4px; color: #fff; font: 700 10px/1.5 var(--font-body); letter-spacing: .06em; }
 .pin.is-live .card-live { background: #2fa84f; }
