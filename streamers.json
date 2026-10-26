@@ -1,5 +1,23 @@
 [
  {
+  "twitch": "dulcegema_",
+  "name": "Dulcegema_",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/7d08e093-809f-48fa-9aeb-97dac3b43caa-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/dulcegemadg"
+  },
+  "lat": 23.917,
+  "lon": -102.1535,
+  "country": "México",
+  "country_code": "MEX",
+  "country_iso2": "MX",
+  "province": "",
+  "province_id": "",
+  "city": "",
+  "nationality": "MX",
+  "tz": "America/Mexico_City"
+ },
+ {
   "twitch": "psychometal_dev",
   "name": "PsychoMetal",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/4624bf96-6301-4be3-a498-967d380626c4-profile_image-300x300.png",
