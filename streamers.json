@@ -103,6 +103,27 @@
   "tz": "America/Mexico_City"
  },
  {
+  "twitch": "eldikii",
+  "name": "Dikki",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/59c2be57-ca37-4669-9d30-a81bf68d59e4-profile_image-300x300.jpeg",
+  "socials": {
+   "youtube": "https://www.youtube.com/@ItsDiki",
+   "tiktok": "https://www.tiktok.com/@eldikii",
+   "x": "https://x.com/ElDikiis",
+   "kick": "https://kick.com/eldikii"
+  },
+  "lat": 4.5709,
+  "lon": -74.2973,
+  "country": "Colombia",
+  "country_code": "COL",
+  "country_iso2": "CO",
+  "province": "",
+  "province_id": "",
+  "city": "",
+  "nationality": "",
+  "tz": "America/Bogota"
+ },
+ {
   "twitch": "eliplays92",
   "name": "Eli",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/30829510-90d9-4bd1-afd7-9add5c67f73d-profile_image-300x300.png",
