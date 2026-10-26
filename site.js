@@ -774,17 +774,48 @@ void main(){
     }
     order.sort((a, b) => a[0] - b[0]);
     for (let i = 0; i < order.length; i++) { const e = order[i][1], z = 10 + i; if (e._st.z !== z) { e._st.z = z; e.style.zIndex = String(z); } }
-    // keep pills from covering each other: lift later ones above earlier neighbours
+    // lejos: solo la foto de perfil (con un poco de margen para que no parpadee al cruzar el umbral)
+    const mini = S.mini = S.mini ? S.k < 1.05 : S.k < 0.95;
+    if (labels._mini !== mini) { labels._mini = mini; labels.classList.toggle('mini', mini); }
+    // las pastillas que se tapan se reparten: primero lo más cerca de su sitio (arriba, en diagonal o a un lado); el palito sigue unido a la ubicación real
+    const PW = mini ? 42 : 165, PH = mini ? 42 : 42, STEP = mini ? 44 : 44;
+    const offs = (S._offs || (S._offs = {}))[mini ? 1 : 0] || ((S._offs[mini ? 1 : 0]) = (() => {
+      const o = [];
+      for (const ox of mini ? [0, 22, -22, 44, -44] : [0, 45, -45, 90, -90, 135, -135, 173, -173]) for (let r = 0; r <= 12; r++) o.push([ox, r * STEP / 2, Math.hypot(ox, r * STEP / 2)]);
+      return o.sort((p, q) => p[2] - q[2]);
+    })());
+    // los palitos no deben cruzarse entre sí ni atravesar otras pastillas: gana el sitio más cercano a su punto; un cruce solo cuesta un poco, así que nunca se alarga una pastilla por evitarlo
+    const sx = (ax, ay, bx, by, cx, cy, dx, dy) => { const o = (px, py, qx, qy, rx, ry) => (qx - px) * (ry - py) - (qy - py) * (rx - px); return (o(ax, ay, bx, by, cx, cy) > 0) !== (o(ax, ay, bx, by, dx, dy) > 0) && (o(cx, cy, dx, dy, ax, ay) > 0) !== (o(cx, cy, dx, dy, bx, by) > 0); };
+    const HW = PW / 2;
+    const inPill = (ax, ay, bx, by, cx, cy) => { for (let t = 0.2; t <= 1.001; t += 0.2) { const px = ax + (bx - ax) * t, py = ay + (by - ay) * t; if (Math.abs(px - cx) < HW && py > cy - 67 && py < cy - 27) return true; } return false; };
     const placed = [];
     for (let j = order.length - 1; j >= 0; j--) {
       const [y, e, x] = order[j];
-      let lift = 0;
+      let ox = 0, lift = 0;
       if (!e.classList.contains('open')) {
-        let moved = true;
-        while (moved && lift < 400) { moved = false; for (const q of placed) if (Math.abs(q.x - x) < 165 && Math.abs((q.y - q.lift) - (y - lift)) < 42) { lift += 44; moved = true; } }
+        let best = null, bestS = 1e9;
+        for (const o of offs) {
+          if (o[2] >= bestS) break;
+          const cx = x + o[0], cy = y - o[1]; let hit = false, cr = 0;
+          for (const q of placed) {
+            if (Math.abs(q.cx - cx) < PW && Math.abs(q.cy - cy) < PH) { hit = true; break; }
+            if (sx(x, y, cx, cy - 27, q.x, q.y, q.cx, q.cy - 27) || inPill(x, y, cx, cy - 27, q.cx, q.cy) || inPill(q.x, q.y, q.cx, q.cy - 27, cx, cy)) cr++;
+          }
+          if (hit) continue;
+          const s = o[2] + cr * 25;
+          if (s < bestS) { bestS = s; best = o; }
+        }
+        best = best || offs[offs.length - 1];
+        ox = best[0]; lift = best[1];
       }
-      if (e._st.lift !== lift) { e._st.lift = lift; const pl = e._pill || (e._pill = e.querySelector('.pill')), sm = e._stem || (e._stem = e.querySelector('.pin-stem')); if (pl) pl.style.translate = lift ? '0 ' + (-lift) + 'px' : ''; if (sm) sm.style.transform = lift ? 'scaleY(' + ((24 + lift) / 24) + ')' : ''; }
-      placed.push({ x, y, lift });
+      const key = ox + ',' + lift;
+      if (e._st.lift !== key) {
+        e._st.lift = key;
+        const pl = e._pill || (e._pill = e.querySelector('.pill')), sm = e._stem || (e._stem = e.querySelector('.pin-stem'));
+        if (pl) pl.style.translate = ox || lift ? ox + 'px ' + (-lift) + 'px' : '';
+        if (sm) sm.style.transform = ox || lift ? 'rotate(' + Math.atan2(ox, 24 + lift) + 'rad) scaleY(' + (Math.hypot(ox, 24 + lift) / 24) + ')' : '';
+      }
+      placed.push({ x, y, cx: x + ox, cy: y - lift });
     }
     const chipT = provMode ? 'Vista: provincias' : 'Vista: países';
     if (chipEl.textContent !== chipT) chipEl.textContent = chipT;
@@ -1152,7 +1183,7 @@ void main(){
     const hint = el('p', 'hint', 'Cada cambio queda en el Historial y se puede deshacer. Lo que borres va a la Papelera.');
     const form = el('form', 'form'); form.noValidate = true;
 
-    const login = inp('f-login', 'text', d.twitch, { autocomplete: 'off', spellcheck: 'false', placeholder: 'ej. ibai' });
+    const login = inp('f-login', 'text', d.twitch, { autocomplete: 'off', spellcheck: 'false', placeholder: 'usuario de Twitch' });
     const name = inp('f-name', 'text', d.name, { placeholder: 'Como aparece en el globo' });
     // avatar
     const avWrap = el('div', 'avatar-edit');
