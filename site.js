@@ -214,7 +214,7 @@
   });
 
   // ---------- globe ----------
-  const stage = $('stage'), canvas = $('globe'), ctx = canvas.getContext('2d'), labels = $('labels');
+  const stage = $('stage'), canvas = $('globe'), ctx = canvas.getContext('2d'), labels = $('labels'), stemsEl = $('stems');
   const glCanvas = $('globe-gl');
   const projection = d3.geoOrthographic().clipAngle(90).precision(0.6);
   const path = d3.geoPath(projection, ctx);
@@ -752,16 +752,16 @@ void main(){
       const depth = x0 * cf - v[2] * sf;
       const ok = depth > 0.03;
       const st = pin._st || (pin._st = { hid: null, tx: NaN, ty: NaN, z: -1, lift: NaN, loc: null, below: null, shift: NaN });
-      if (st.hid !== !ok) { pin.hidden = !ok; st.hid = !ok; }
+      if (st.hid !== !ok) { pin.hidden = !ok; st.hid = !ok; pin._stem.hidden = !ok || st.below === true; }
       if (!ok) continue;
       const px = W / 2 + sph * y0, py = H / 2 - sph * (v[2] * cf + x0 * sf);
-      if (!(Math.abs(px - st.tx) <= 0.02) || !(Math.abs(py - st.ty) <= 0.02)) { st.tx = px; st.ty = py; pin.style.transform = `translate(${px.toFixed(2)}px, ${py.toFixed(2)}px)`; }
+      if (!(Math.abs(px - st.tx) <= 0.02) || !(Math.abs(py - st.ty) <= 0.02)) { st.tx = px; st.ty = py; pin.style.transform = `translate(${px.toFixed(2)}px, ${py.toFixed(2)}px)`; st.stemT = null; }
       if (pin.classList.contains('open')) {
         const card = pin._card || (pin._card = pin.querySelector('.card'));
         if (card && !card._size) card._size = [card.offsetWidth, card.offsetHeight];
         const ch = card ? card._size[1] : 260, half = (card ? card._size[0] : 290) / 2;
         const below = py - ch - 40 < 0 && py + ch + 20 < H;
-        if (below !== st.below) { pin.classList.toggle('below', below); st.below = below; }
+        if (below !== st.below) { pin.classList.toggle('below', below); st.below = below; pin._stem.hidden = below; }
         let sh = 0; if (px - half < 8) sh = 8 + half - px; if (px + half > W - 8) sh = W - 8 - half - px;
         if (Math.abs(sh - st.shift) > 0.05 || st.shift !== st.shift) { pin.style.setProperty('--shift', sh + 'px'); st.shift = sh; }
       }
@@ -781,41 +781,54 @@ void main(){
     const PW = mini ? 42 : 165, PH = mini ? 42 : 42, STEP = mini ? 44 : 44;
     const offs = (S._offs || (S._offs = {}))[mini ? 1 : 0] || ((S._offs[mini ? 1 : 0]) = (() => {
       const o = [];
-      for (const ox of mini ? [0, 22, -22, 44, -44] : [0, 45, -45, 90, -90, 135, -135, 173, -173]) for (let r = 0; r <= 12; r++) o.push([ox, r * STEP / 2, Math.hypot(ox, r * STEP / 2)]);
+      // coste = distancia al punto; subir recto es lo más barato y inclinar el palito cuesta un extra, así que solo se va a los lados si arriba no cabe
+      for (const ox of mini ? [0, 22, -22, 44, -44, 66, -66, 88, -88] : [0, 45, -45, 90, -90, 135, -135, 173, -173, 225, -225, 280, -280]) for (let r = 0; r <= 16; r++) o.push([ox, r * 22, r * 22 + Math.abs(ox) * 0.6 + (ox ? 30 : 0)]);
       return o.sort((p, q) => p[2] - q[2]);
     })());
-    // los palitos no deben cruzarse entre sí ni atravesar otras pastillas: gana el sitio más cercano a su punto; un cruce solo cuesta un poco, así que nunca se alarga una pastilla por evitarlo
+    // los palitos no deben cruzarse entre sí ni atravesar otras pastillas: gana el sitio más barato: cerca de su punto, el palito recto hacia arriba si cabe y, sobre todo, sin cruces
     const sx = (ax, ay, bx, by, cx, cy, dx, dy) => { const o = (px, py, qx, qy, rx, ry) => (qx - px) * (ry - py) - (qy - py) * (rx - px); return (o(ax, ay, bx, by, cx, cy) > 0) !== (o(ax, ay, bx, by, dx, dy) > 0) && (o(cx, cy, dx, dy, ax, ay) > 0) !== (o(cx, cy, dx, dy, bx, by) > 0); };
     const HW = PW / 2;
     const inPill = (ax, ay, bx, by, cx, cy) => { for (let t = 0.2; t <= 1.001; t += 0.2) { const px = ax + (bx - ax) * t, py = ay + (by - ay) * t; if (Math.abs(px - cx) < HW && py > cy - 67 && py < cy - 27) return true; } return false; };
+    // al girar o hacer zoom el reparto casi no cambia: se recalcula como mucho cada 90 ms (o cuando cambia qué pastillas se ven); entre medias solo se mueven los palitos
+    const nowT = performance.now(), sig = order.length + (mini ? 'm' : 'f');
+    const reuse = S._sig === sig && nowT - (S._placeT || 0) < 90;
+    if (!reuse) { S._sig = sig; S._placeT = nowT; }
     const placed = [];
     for (let j = order.length - 1; j >= 0; j--) {
       const [y, e, x] = order[j];
       let ox = 0, lift = 0;
-      if (!e.classList.contains('open')) {
+      if (reuse) { ox = e._st.ox || 0; lift = e._st.oy || 0; }
+      else if (!e.classList.contains('open')) {
         let best = null, bestS = 1e9;
         for (const o of offs) {
           if (o[2] >= bestS) break;
           const cx = x + o[0], cy = y - o[1]; let hit = false, cr = 0;
           for (const q of placed) {
             if (Math.abs(q.cx - cx) < PW && Math.abs(q.cy - cy) < PH) { hit = true; break; }
-            if (sx(x, y, cx, cy - 27, q.x, q.y, q.cx, q.cy - 27) || inPill(x, y, cx, cy - 27, q.cx, q.cy) || inPill(q.x, q.y, q.cx, q.cy - 27, cx, cy)) cr++;
+            // si ni las cajas de los dos palitos ni las pastillas se acercan, no hay nada que comprobar (ahorra casi todo el cálculo)
+            if (Math.max(x, cx) + HW < Math.min(q.x, q.cx) - HW || Math.min(x, cx) - HW > Math.max(q.x, q.cx) + HW || cy - 70 > q.y || q.cy - 70 > y) continue;
+            if (sx(x, y, cx, cy - 27, q.x, q.y, q.cx, q.cy - 27)) cr += 150; else if (inPill(x, y, cx, cy - 27, q.cx, q.cy) || inPill(q.x, q.y, q.cx, q.cy - 27, cx, cy)) cr += 15;
           }
           if (hit) continue;
-          const s = o[2] + cr * 25;
+          const s = o[2] + cr;
           if (s < bestS) { bestS = s; best = o; }
         }
         best = best || offs[offs.length - 1];
         ox = best[0]; lift = best[1];
       }
+      e._st.ox = ox; e._st.oy = lift;
       const key = ox + ',' + lift;
       if (e._st.lift !== key) {
-        e._st.lift = key;
-        const pl = e._pill || (e._pill = e.querySelector('.pill')), sm = e._stem || (e._stem = e.querySelector('.pin-stem'));
+        e._st.lift = key; e._st.stemT = null;
+        const pl = e._pill || (e._pill = e.querySelector('.pill'));
         if (pl) pl.style.translate = ox || lift ? ox + 'px ' + (-lift) + 'px' : '';
-        if (sm) sm.style.transform = ox || lift ? 'rotate(' + Math.atan2(ox, 24 + lift) + 'rad) scaleY(' + (Math.hypot(ox, 24 + lift) / 24) + ')' : '';
       }
-      placed.push({ x, y, cx: x + ox, cy: y - lift });
+      if (e._st.stemT === null || e._st.stemT === undefined) {
+        // el palito vive en su propia capa debajo de todas las pastillas: así nunca se pinta encima de otra
+        e._st.stemT = 1;
+        e._stem.style.transform = 'translate(' + (e._st.tx - 1).toFixed(2) + 'px, ' + (e._st.ty - 28).toFixed(2) + 'px)' + (ox || lift ? ' rotate(' + Math.atan2(ox, 24 + lift) + 'rad) scaleY(' + (Math.hypot(ox, 24 + lift) / 24) + ')' : '');
+      }
+      if (!reuse) placed.push({ x, y, cx: x + ox, cy: y - lift });
     }
     const chipT = provMode ? 'Vista: provincias' : 'Vista: países';
     if (chipEl.textContent !== chipT) chipEl.textContent = chipT;
@@ -914,11 +927,11 @@ void main(){
   // pins
   const pins = new Map();
   const buildPins = () => {
-    pins.clear(); labels.replaceChildren();
+    pins.clear(); labels.replaceChildren(); stemsEl.replaceChildren();
     live().forEach((p, i) => {
       const pin = el('div', 'pin'); pin.dataset.login = p.twitch; { const v = LIVE.get(p.twitch); if (v === true) pin.classList.add('is-live'); else if (v === false) pin.classList.add('is-off'); }
       const fl = el('div', 'pin-float bob'); fl.style.animationDelay = (i % 7) * 0.45 + 's';
-      fl.append(el('div', 'pin-stem'));
+      const stem = el('div', 'pin-stem'); stemsEl.append(stem);
       if (S.open === p.twitch) { pin.classList.add('open'); fl.append(buildCard(p)); fl.classList.remove('bob'); }
       else {
         const pill = el('div', 'pill'); pill.tabIndex = 0; pill.setAttribute('role', 'button'); pill.setAttribute('aria-label', `Ver datos de ${p.name || p.twitch}`);
@@ -933,7 +946,7 @@ void main(){
         fl.append(pill);
       }
       pin.append(fl, el('div', 'pin-dot'));
-      labels.append(pin); pins.set(p.twitch, pin);
+      pin._stem = stem; labels.append(pin); pins.set(p.twitch, pin);
     });
   };
   // chevron that says "this opens downwards"

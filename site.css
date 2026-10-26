@@ -271,8 +271,8 @@ body.preview .back { display: inline-flex; }
 .credit { position: absolute; left: calc(12px + env(safe-area-inset-left, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 3; font-size: 11px; color: rgba(190, 190, 190, .5); pointer-events: none; user-select: none; }
 
 /* pastillas que se reparten: movimiento suave y, lejos, solo la foto */
-.pill { transition: border-color .15s, translate .18s ease-out; }
-.pin-stem { transition: transform .18s ease-out; }
+.stems { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.stems .pin-stem { left: 0; top: 0; bottom: auto; will-change: transform; }
 .labels.mini .pill-txt, .labels.mini .pill-more { display: none; }
 .labels.mini .pill { padding: 3px; gap: 0; }
 .labels.mini .pill-live { left: 0 !important; top: 0 !important; }
