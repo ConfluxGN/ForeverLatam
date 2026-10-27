@@ -367,9 +367,14 @@
       const d = x0 * cf - z0 * sf, yy = z0 * cf + x0 * sf;
       let X = y0, Y = yy;
       if (d < 0) {
-        const len = Math.hypot(y0, yy); if (len < 1e-3) return false;
+        const len = Math.hypot(y0, yy); if (len < 1e-3) return true; // justo en la antípoda: se salta
         const nx = y0 / len, ny = yy / len;
-        if (back && nx * bx + ny * by < 0) return false; // salto por detrás de un lado al otro: lo hace d3
+        if (back && have && nx * bx + ny * by < 0.5) {
+          // salto grande por detrás: se rodea por un arco lejos del disco, para no cruzar la cara visible
+          const a0 = Math.atan2(-by, bx), a1 = Math.atan2(-ny, nx);
+          let da = a1 - a0; if (da > Math.PI) da -= 2 * Math.PI; else if (da < -Math.PI) da += 2 * Math.PI;
+          p2.lineTo(cx + 2.2 * s * bx, cy - 2.2 * s * by); p2.arc(cx, cy, 2.2 * s, a0, a0 + da, da < 0);
+        }
         const f = (1 - d) / len; X = y0 * f; Y = yy * f; back = true; bx = nx; by = ny;
       } else back = false;
       if (!have) p2.moveTo(cx + s * X, cy - s * Y);
@@ -382,7 +387,7 @@
       if (have) {
         const dot = u0 * pu0 + u1 * pu1 + u2 * pu2;
         if (dot < 0.99998) { // arista larga: se subdivide por el gran círculo, como hace d3
-          const w = Math.acos(Math.max(-1, dot)); if (w > 2.5) return false;
+          const w = Math.acos(Math.max(-1, dot)); if (w > 3) return false;
           const m = Math.ceil(w / 0.0063), sw = Math.sin(w);
           for (let t = 1; t < m; t++) {
             const f = t / m, a = Math.sin((1 - f) * w) / sw, b = Math.sin(f * w) / sw;
@@ -672,7 +677,7 @@ void main(){
       const i = snapInfo;
       gl.uniform3f(ru.view0, i.cx, i.cy, i.s);
       gl.uniform2f(ru.rot0, i.rot[0] * Math.PI / 180, i.rot[1] * Math.PI / 180);
-      gl.uniform2f(ru.size0, i.w, i.h);
+      gl.uniform2f(ru.size0, i.tw, i.th);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.useProgram(prog);
     };
@@ -702,7 +707,6 @@ void main(){
   const SNAP_BANDS = 4;
   const bandCanvas = document.createElement('canvas'), bandCtx = bandCanvas.getContext('2d');
   let buildOnly = false, buildTimer = 0, build = null, paper = null, paintMemo = null;
-  const landCanvas = document.createElement('canvas'), landCtx = landCanvas.getContext('2d');
   const buildSoon = () => {
     clearTimeout(buildTimer);
     buildTimer = setTimeout(function tick() {
@@ -786,15 +790,16 @@ void main(){
       // land
       // la tierra con su borde interior va en una capa aparte: el borde se pinta con 'source-atop' (solo encima de la tierra),
       // que da lo mismo que recortar con clip() pero sin su coste (clip() con un trazado tan grande multiplica el tiempo de dibujo)
-      const cv = ctx.canvas, lc = landCtx;
-      if (landCanvas.width !== cv.width || landCanvas.height !== cv.height) { landCanvas.width = cv.width; landCanvas.height = cv.height; }
+      // una capa por lienzo (pantalla y foto): compartida se rehacía a cada cambio entre los dos, y eso da parones
+      const cv = ctx.canvas, land = cv._land || (cv._land = document.createElement('canvas')), lc = land.getContext('2d');
+      if (land.width !== cv.width || land.height !== cv.height) { land.width = cv.width; land.height = cv.height; }
       lc.setTransform(1, 0, 0, 1, 0, 0); lc.clearRect(0, 0, cv.width, cv.height); lc.setTransform(ctx.getTransform());
       lc.fillStyle = colors.land; lc.fill(landP);
       stain(0.75, 1, landP, lc);
       lc.globalCompositeOperation = 'source-atop'; lc.strokeStyle = colors.edge; lc.lineJoin = 'round';
       lc.globalAlpha = 0.22; lc.lineWidth = 22; lc.stroke(coastP); lc.globalAlpha = 0.3; lc.lineWidth = 8; lc.stroke(coastP);
       lc.globalCompositeOperation = 'source-over'; lc.globalAlpha = 1;
-      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(landCanvas, 0, 0); ctx.restore();
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(land, 0, 0); ctx.restore();
       // wine wash for the places with streamers
       ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = colors.hi;
       const A = 0.6;
@@ -879,8 +884,8 @@ void main(){
     };
     const snapSig = (G.hi ? 'h' : 'l') + (provMode ? 'p' : 'c') + people.length + '|' + W + 'x' + H + '|' + dpr + '|' + colors.hi;
     const snapDist = (i) => { const p = i && projection(i.c); return p ? Math.hypot(p[0] - W / 2, p[1] - H / 2) : Infinity; };
-    // sirve si su zoom no se aleja mucho del actual: reducida se ve nítida y ampliada como mucho un 25 % (solo unas imágenes, mientras se rehace)
-    const fresh = (i) => !!i && i.sig === snapSig && sphereR / i.s >= 0.65 && sphereR / i.s <= 1.25 && covers(i);
+    // sirve si su zoom no se aleja mucho del actual: reducida se ve nítida y ampliada como mucho un 50 % (solo unas imágenes en pleno zoom, mientras se rehace)
+    const fresh = (i) => !!i && i.sig === snapSig && sphereR / i.s >= 0.5 && sphereR / i.s <= 1.5 && covers(i);
     // la pantalla entera cae dentro de la foto (con su zoom y lo que se ha desplazado)
     function covers(i) { const r = sphereR / i.s, d = snapDist(i); return (W / 2 + d) / r <= W / 2 + 0.9 * i.m + 0.5 && (H / 2 + d) / r <= H / 2 + 0.9 * i.m + 0.5; }
     const exact = (i) => !!i && Math.abs(sphereR / i.s - 1) < 1e-4;
@@ -904,27 +909,31 @@ void main(){
       try { return fn(); } finally { W = W0; H = H0; S.rot = r0; S.k = k0; sphereR = s0; paper = p0; ctx = screenCtx; path.context(ctx); setProj(); }
     };
     // una franja de la foto nueva; al arrastrar se adelanta en la dirección del movimiento para durar más
+    // con tope de vueltas: si algo no cuadra, mejor pintar directo que colgar la página
+    const buildAll = () => { build = null; let n = SNAP_BANDS + 1; do buildStep(); while (build && --n > 0); };
     const buildStep = () => {
       if (!build || build.info.sig !== snapSig || sphereR / build.info.s < 0.6 || sphereR / build.info.s > 1.25) {
-        const g = zooming ? sphereR / prevR : 1, s1 = sphereR * (g > 1 ? Math.min(1.45, g ** SNAP_BANDS / 0.75) : Math.max(0.7, g ** SNAP_BANDS));
+        const g = zooming ? sphereR / prevR : 1, s1 = sphereR * (g > 1 ? Math.min(1.45, g ** SNAP_BANDS / 0.75) : Math.max(0.85, g ** SNAP_BANDS));
         const snapPx = Math.round(marginFor(s1) * sdx);
         let sd = sdx, cw = glCanvas.width + 2 * snapPx, ch = glCanvas.height + 2 * snapPx;
         if (cw > GL.maxT || ch > GL.maxT) { const f = GL.maxT / Math.max(cw, ch); sd *= f; cw = Math.floor(cw * f); ch = Math.floor(ch * f); }
+        // la textura y el lienzo de franjas se reservan una vez al tamaño máximo: rehacerlos a cada foto (decenas de MB) da parones
+        const mx = Math.round(Math.max(W, H) * 0.3 * sdx), tw = Math.max(cw, Math.min(GL.maxT, glCanvas.width + 2 * mx)), th = Math.max(ch, Math.min(GL.maxT, glCanvas.height + 2 * mx));
         const sw = cw / sd, sh = ch / sd, m = snapPx / sdx, v = Math.hypot(dRot[0], dRot[1]) * RAD * sphereR;
         let rot = S.rot.slice();
         if (moving && v > 0.5) { const f = Math.min(0.8 * m, 0.55 * m + SNAP_BANDS * v) / v; rot = [rot[0] + dRot[0] * f, Math.max(-89, Math.min(89, rot[1] + dRot[1] * f))]; }
         const bh = Math.ceil(ch / SNAP_BANDS);
-        build = { i: 0, sd, ch, bh, paper, memo: {}, info: { cx: sw / 2, cy: sh / 2, m: (cw - glCanvas.width) / 2 / sd, s: s1, rot, w: sw, h: sh, sig: snapSig } };
+        build = { i: 0, sd, ch, bh, paper, memo: {}, info: { tw: tw / sd, th: th / sd, cx: sw / 2, cy: sh / 2, m: (cw - glCanvas.width) / 2 / sd, s: s1, rot, w: sw, h: sh, sig: snapSig } };
         build.info.c = inSnap(build, center);
-        if (bandCanvas.width !== cw || bandCanvas.height !== bh) { bandCanvas.width = cw; bandCanvas.height = bh; }
-        GL.snapBegin(cw, ch);
+        const bt = Math.ceil(th / SNAP_BANDS);
+        if (bandCanvas.width !== tw || bandCanvas.height !== bt) { bandCanvas.width = tw; bandCanvas.height = bt; }
+        GL.snapBegin(tw, th);
       }
       const b = build, y = b.i * b.bh, h = Math.min(b.bh, b.ch - y);
       paintMemo = b.memo; try { inSnap(b, () => paintMap(b.sd, y / b.sd)); } finally { paintMemo = null; }
       GL.snapBand(bandCanvas, y, h);
       if (++b.i * b.bh >= b.ch) { GL.snapSwap(b.info); build = null; if (buildOnly) schedule(); }
     };
-    const buildAll = () => { build = null; do buildStep(); while (build); };
     const canSnap = GL && GL.canSnap() && !useGL && S.k >= vectorFrom();
     // en reposo la foto se rehace (a franjas, sin prisa) exactamente en la vista actual: entonces se ve igual que pintada directa
     if (buildOnly) {
@@ -937,13 +946,19 @@ void main(){
     if (useGL) {
       GL.render();
     } else if (canSnap) {
-      // de cerca la pantalla siempre muestra la foto recolocada: pintar el mapa entero directo en pantalla es lo que más cuesta
-      if (!fresh(GL.snap())) buildAll();
+      // de cerca la pantalla muestra la foto recolocada: pintar el mapa entero directo en pantalla es lo que más cuesta
+      // si la foto ya no sirve (zoom brusco), se pinta la pantalla directamente y la nueva se prepara por franjas
+      // cuando el zoom se calma: nunca entera de golpe, que congela la página
+      // salto brusco de zoom (rueda de golpe): se pinta directo y la foto se rehace al calmarse; en zoom suave, foto entera
+      if (!fresh(GL.snap()) && !(zooming && Math.abs(sphereR / prevR - 1) > 0.08)) buildAll();
+      if (!fresh(GL.snap())) { GL.clear(); paintMap(); if (!moving) buildSoon(); }
+      else {
       const i = GL.snap();
       GL.reproject();
       // en marcha solo se prepara otra foto cuando esta se va a acabar (o, quieto el zoom, para volver a la nitidez exacta)
       if (moving) { const fl = framesLeft(i); if (build || fl < SNAP_BANDS + 3 || (!zooming && !exact(i))) buildStep(); }
       else if (!still(i)) buildSoon();
+      }
     } else {
       if (GL) GL.clear();
       paintMap();
