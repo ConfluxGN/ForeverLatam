@@ -1,0 +1,25 @@
+name: En directo
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/20 * * * *" # de reserva: cada ejecución dura casi 6 h y mira Twitch cada 2 min
+
+concurrency:
+  group: en-directo
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  directo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - name: Consultar Twitch cada 2 minutos y publicar live.json
+        env:
+          TWITCH_CLIENT_ID: 4r8euz43h0pivwi13ocqhm08bqlnbs
+          TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+        run: python3 .github/en_directo.py
