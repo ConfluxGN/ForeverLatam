@@ -771,7 +771,7 @@ void main(){
         const lt = provMode ? (place(p.city, provinceLabel(p)) || p.country || '') : `${flag(p.country_iso2)} ${p.country || ''}`.trim();
         if (loc.dataset.t !== lt) { loc.dataset.t = lt; loc.replaceChildren(...(provMode ? [lt] : withFlag(p.country_iso2, p.country || ''))); }
       }
-      order.push([py, pin, px]);
+      order.push([py, pin, px, depth]);
     }
     order.sort((a, b) => a[0] - b[0]);
     for (let i = 0; i < order.length; i++) { const e = order[i][1], z = 10 + i; if (e._st.z !== z) { e._st.z = z; e.style.zIndex = String(z); } }
@@ -796,14 +796,17 @@ void main(){
     if (!reuse) { S._sig = sig; S._placeT = nowT; }
     const placed = [];
     for (let j = order.length - 1; j >= 0; j--) {
-      const [y, e, x] = order[j];
+      const [y, e, x, depth] = order[j];
+      // la pastilla nunca se sale de la pantalla, salvo si su punto ya está en el borde de la Tierra a punto de desaparecer o fuera de la pantalla
+      const edge = depth < 0.2 || x < 0 || x > W || y < 0 || y > H, inX = (v) => edge ? v : Math.min(W - 4 - HW, Math.max(4 + HW, v));
       let ox = 0, lift = 0;
       if (reuse) { ox = e._st.ox || 0; lift = e._st.oy || 0; }
       else if (!e.classList.contains('open')) {
         let best = null, bestS = 1e9;
         for (const o of offs) {
           if (o[2] >= bestS) break;
-          const cx = x + o[0], cy = y - o[1]; let hit = false, cr = 0;
+          const cx = inX(x + o[0]), cy = y - o[1]; let hit = false, cr = 0;
+          if (!edge && o[1] && cy - 67 < 4) continue;
           for (const q of placed) {
             if (Math.abs(q.cx - cx) < PW && Math.abs(q.cy - cy) < PH) { hit = true; break; }
             // si ni las cajas de los dos palitos ni las pastillas se acercan, no hay nada que comprobar (ahorra casi todo el cálculo)
@@ -812,9 +815,9 @@ void main(){
           }
           if (hit) continue;
           const s = o[2] + cr;
-          if (s < bestS) { bestS = s; best = o; }
+          if (s < bestS) { bestS = s; best = [cx - x, o[1]]; }
         }
-        best = best || offs[offs.length - 1];
+        best = best || [inX(x) - x, 0];
         ox = best[0]; lift = best[1];
       }
       e._st.ox = ox; e._st.oy = lift;
