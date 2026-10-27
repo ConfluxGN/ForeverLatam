@@ -41,6 +41,26 @@
   "age": 35
  },
  {
+  "twitch": "d4go0",
+  "name": "D4GO0",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/b4e7e396-1474-4e20-9970-119d24daea43-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/d4g0o",
+   "youtube": "https://www.youtube.com/@D4GO0"
+  },
+  "lat": 19.3574,
+  "lon": -99.0926,
+  "country": "México",
+  "country_code": "MEX",
+  "country_iso2": "MX",
+  "province": "Ciudad de México",
+  "province_id": "p4211",
+  "city": "Iztapalapa",
+  "nationality": "MX",
+  "tz": "America/Mexico_City",
+  "age": 31
+ },
+ {
   "twitch": "dalexochoa",
   "name": "DalexOchoa",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/2987da71-0917-4017-9253-9a40b6407db8-profile_image-300x300.png",
@@ -323,6 +343,22 @@
   "nationality": "UY",
   "tz": "America/Montevideo",
   "age": 28
+ },
+ {
+  "twitch": "miss_carishina",
+  "name": "miss_carishina",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/37097a9a-b176-49a6-8ee8-f06f3fdc8f35-profile_image-300x300.png",
+  "socials": {},
+  "lat": 40.495,
+  "lon": -3.717,
+  "country": "España",
+  "country_code": "ESP",
+  "country_iso2": "ES",
+  "province": "Madrid",
+  "province_id": "p4544",
+  "city": "",
+  "nationality": "EC",
+  "tz": "Europe/Madrid"
  },
  {
   "twitch": "psychometal_dev",
