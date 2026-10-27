@@ -381,7 +381,11 @@
   "twitch": "miss_carishina",
   "name": "miss_carishina",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/37097a9a-b176-49a6-8ee8-f06f3fdc8f35-profile_image-300x300.png",
-  "socials": {},
+  "socials": {
+   "instagram": "https://www.instagram.com/carishina_tk",
+   "tiktok": "https://www.tiktok.com/@carishina_tk",
+   "kick": "https://kick.com/carishina"
+  },
   "lat": 40.495,
   "lon": -3.717,
   "country": "España",
@@ -432,7 +436,9 @@
   "twitch": "wallsides",
   "name": "Wally",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/4529bdf1-2409-4739-8ef3-b85e3d303a63-profile_image-300x300.png",
-  "socials": {},
+  "socials": {
+   "youtube": "https://www.youtube.com/@wallside28"
+  },
   "lat": 18.8421,
   "lon": -70.1321,
   "country": "República Dominicana",
@@ -485,7 +491,12 @@
   "twitch": "zeodeon",
   "name": "zeodeon",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/b3d3ba49-f919-4d92-bcca-d48bc987a475-profile_image-300x300.png",
-  "socials": {},
+  "socials": {
+   "instagram": "https://www.instagram.com/zeodeon_",
+   "youtube": "https://www.youtube.com/@zeodeon_tv",
+   "tiktok": "https://www.tiktok.com/@zeodeon",
+   "x": "https://x.com/zeodeon"
+  },
   "lat": -34.6502,
   "lon": -58.453,
   "country": "Argentina",
