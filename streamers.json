@@ -1,5 +1,21 @@
 [
  {
+  "twitch": "artemiisa",
+  "name": "Elune",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/715f21ec-4370-4fe4-a838-53069a11fd27-profile_image-300x300.png",
+  "socials": {},
+  "lat": 4.711,
+  "lon": -74.0721,
+  "country": "Colombia",
+  "country_code": "COL",
+  "country_iso2": "CO",
+  "province": "Bogotá",
+  "province_id": "p3781",
+  "city": "",
+  "nationality": "CO",
+  "tz": "America/Bogota"
+ },
+ {
   "twitch": "chivopesado",
   "name": "Chivopesado",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/043bbd1e-13d7-4161-8fe8-cbd08fdb69cd-profile_image-300x300.png",
