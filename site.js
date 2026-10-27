@@ -280,7 +280,8 @@
     return cv;
   })();
 
-  const DPR = () => Math.min(2, window.devicePixelRatio || 1);
+  // tope 1,5: a 2x el mapa de cerca cuesta casi el doble de pintar y en pantallas con escala alta se notaban tirones; a 1,5 se ve igual de nítido
+  const DPR = () => Math.min(1.5, window.devicePixelRatio || 1);
   const resize = () => {
     W = stage.clientWidth; H = stage.clientHeight; R = Math.min(W, H) / 2 * 0.9;
     const dpr = DPR();
@@ -763,7 +764,7 @@ void main(){
         const below = py - ch - 40 < 0 && py + ch + 20 < H;
         if (below !== st.below) { pin.classList.toggle('below', below); st.below = below; pin._stem.hidden = below; }
         let sh = 0; if (px - half < 8) sh = 8 + half - px; if (px + half > W - 8) sh = W - 8 - half - px;
-        if (Math.abs(sh - st.shift) > 0.05 || st.shift !== st.shift) { pin.style.setProperty('--shift', sh + 'px'); st.shift = sh; }
+        if (Math.abs(sh - st.shift) > 0.05 || st.shift !== st.shift) { if (card) card.style.translate = sh ? sh.toFixed(1) + 'px 0' : ''; st.shift = sh; } // translate directo: lo mueve la tarjeta gráfica sin recalcular ni repintar la ficha
       }
       const loc = pin._loc || (pin._loc = pin.querySelector('.pill-loc'));
       if (loc) {
@@ -961,7 +962,7 @@ void main(){
   let lastPill = { w: 170, h: 40 }, closing = false;
   const morphClip = (card, pin, pw, ph, open) => {
     const cw = card.offsetWidth, ch = card.offsetHeight;
-    const shift = parseFloat(pin.style.getPropertyValue('--shift')) || 0;
+    const shift = parseFloat(card.style.translate) || 0;
     const left = Math.max(0, cw / 2 - shift - pw / 2), right = Math.max(0, cw - left - pw), v = Math.max(0, ch - ph);
     const small = pin.classList.contains('below') ? `inset(0px ${right}px ${v}px ${left}px round 8px)` : `inset(${v}px ${right}px 0px ${left}px round 8px)`;
     const big = 'inset(0px 0px 0px 0px round 10px)';
