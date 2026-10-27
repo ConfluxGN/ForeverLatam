@@ -354,11 +354,29 @@
     return out;
   };
   const lineGeom = (q) => ({ type: 'LineString', coordinates: q.idx.map((i) => q.pts[i]) });
-  // proyección ortográfica a mano → Path2D/contexto. Devuelve false si algún vértice queda detrás del horizonte.
+  // proyección ortográfica a mano → Path2D/contexto. Devuelve false si no se puede (arista enorme o salto por detrás).
+  // los vértices de detrás (los de relleno de los trozos que no se ven) se llevan fuera del disco, en su misma dirección:
+  // así no se doblan sobre la cara visible y el relleno sigue bien sin pasar por d3 (que es diez veces más lento)
   const emitSeg = (p2, seg, M, close) => {
     const U = uOf(seg.pts), idx = seg.idx, n = idx ? idx.length : seg.pts.length;
     const { cl, sl, cf, sf, s, cx, cy } = M;
-    let have = false, pu0 = 0, pu1 = 0, pu2 = 0;
+    let have = false, pu0 = 0, pu1 = 0, pu2 = 0, bx = 0, by = 0, back = false, lx = 0, ly = 0;
+    // los vértices a menos de medio píxel del anterior no se ven y solo encarecen el dibujo: se saltan (salvo el último)
+    const tol = 0.5 / s;
+    const put = (x0, y0, z0, last) => {
+      const d = x0 * cf - z0 * sf, yy = z0 * cf + x0 * sf;
+      let X = y0, Y = yy;
+      if (d < 0) {
+        const len = Math.hypot(y0, yy); if (len < 1e-3) return false;
+        const nx = y0 / len, ny = yy / len;
+        if (back && nx * bx + ny * by < 0) return false; // salto por detrás de un lado al otro: lo hace d3
+        const f = (1 - d) / len; X = y0 * f; Y = yy * f; back = true; bx = nx; by = ny;
+      } else back = false;
+      if (!have) p2.moveTo(cx + s * X, cy - s * Y);
+      else if (last || Math.abs(X - lx) + Math.abs(Y - ly) > tol) p2.lineTo(cx + s * X, cy - s * Y);
+      else return true;
+      have = true; lx = X; ly = Y; return true;
+    };
     for (let j = 0; j < n; j++) {
       const i = idx ? idx[j] : j, u0 = U[i * 3], u1 = U[i * 3 + 1], u2 = U[i * 3 + 2];
       if (have) {
@@ -369,17 +387,12 @@
           for (let t = 1; t < m; t++) {
             const f = t / m, a = Math.sin((1 - f) * w) / sw, b = Math.sin(f * w) / sw;
             const q0 = a * pu0 + b * u0, q1 = a * pu1 + b * u1, q2 = a * pu2 + b * u2;
-            const x0 = q0 * cl - q1 * sl, y0 = q0 * sl + q1 * cl;
-            if (x0 * cf - q2 * sf < 0) return false;
-            p2.lineTo(cx + s * y0, cy - s * (q2 * cf + x0 * sf));
+            if (!put(q0 * cl - q1 * sl, q0 * sl + q1 * cl, q2)) return false;
           }
         }
       }
-      const x0 = u0 * cl - u1 * sl, y0 = u0 * sl + u1 * cl;
-      if (x0 * cf - u2 * sf < 0) return false;
-      const X = cx + s * y0, Y = cy - s * (u2 * cf + x0 * sf);
-      if (have) p2.lineTo(X, Y); else p2.moveTo(X, Y);
-      have = true; pu0 = u0; pu1 = u1; pu2 = u2;
+      if (!put(u0 * cl - u1 * sl, u0 * sl + u1 * cl, u2, j === n - 1)) return false;
+      pu0 = u0; pu1 = u1; pu2 = u2;
     }
     if (close && have) p2.closePath();
     return true;
@@ -620,7 +633,7 @@ void main(){
   o = texture(snap, q);
 }`;
     let rprog = null, ru = null;
-    const stex = gl.createTexture();
+    let stex = gl.createTexture(), stexB = gl.createTexture();
     try {
       rprog = gl.createProgram(); gl.attachShader(rprog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(rprog, sh(gl.FRAGMENT_SHADER, rfs)); gl.bindAttribLocation(rprog, loc, 'p'); gl.linkProgram(rprog);
       if (!gl.getProgramParameter(rprog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(rprog));
@@ -628,17 +641,25 @@ void main(){
       ru = { snap: RU('snap'), res: RU('res'), view: RU('view'), rot: RU('rot'), dpr: RU('dpr'), view0: RU('view0'), rot0: RU('rot0'), size0: RU('size0') };
     } catch (e) { console.warn('Reproyección off:', e); rprog = null; }
     let snapInfo = null;
-    const setSnap = (cv, info) => {
-      gl.bindTexture(gl.TEXTURE_2D, stex);
-      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
-      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      snapInfo = info;
+    // la foto siguiente se prepara a trozos en una segunda textura (una franja por imagen) y se cambia por la actual cuando está completa: nunca un parón
+    const snapBegin = (w, h) => {
+      gl.bindTexture(gl.TEXTURE_2D, stexB);
+      if (stexB._w !== w || stexB._h !== h) {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        stexB._w = w; stexB._h = h;
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      }
     };
+    const snapBand = (cv, y, h) => {
+      gl.bindTexture(gl.TEXTURE_2D, stexB);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, y, cv.width, h, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    };
+    const snapSwap = (info) => { const t = stex; stex = stexB; stexB = t; snapInfo = info; };
     const reproject = () => {
       gl.viewport(0, 0, glCanvas.width, glCanvas.height);
       gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
@@ -655,7 +676,7 @@ void main(){
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.useProgram(prog);
     };
-    return { loadBase, paintFallback, paintMask, render, clear, canSnap: () => !!rprog, setSnap, snap: () => snapInfo, dropSnap: () => { snapInfo = null; }, reproject, maxT, base: () => baseState, ready: () => ready && maskReady, maxK: TW / (2 * Math.PI * 280) / 1.1 };
+    return { loadBase, paintFallback, paintMask, render, clear, canSnap: () => !!rprog, snapBegin, snapBand, snapSwap, snap: () => snapInfo, dropSnap: () => { snapInfo = null; }, reproject, maxT, base: () => baseState, ready: () => ready && maskReady, maxK: TW / (2 * Math.PI * 280) / 1.1 };
   })();
   let texDirty = true, texKey = '';
   const ensureTexture = () => {
@@ -677,9 +698,20 @@ void main(){
   const markMoving = () => { moving = true; clearTimeout(settleTimer); settleTimer = setTimeout(() => { moving = false; schedule(); }, 180); };
   const chipEl = $('chip');
   // la foto del mapa de cerca: se pinta en un lienzo aparte, un 30 % más grande por cada lado, y la tarjeta gráfica la recoloca al arrastrar
-  const snapCanvas = document.createElement('canvas'), snapCtx = snapCanvas.getContext('2d');
-  let snapOnly = false, snapTimer = 0, paper = null;
-  const buildSnapSoon = () => { clearTimeout(snapTimer); snapTimer = setTimeout(() => { if (!moving && !raf) { snapOnly = true; try { draw(); } finally { snapOnly = false; } } }, 300); };
+  // se pinta a franjas (SNAP_BANDS, una por imagen) en un lienzo pequeño y cada franja sube a la textura de reserva
+  const SNAP_BANDS = 4;
+  const bandCanvas = document.createElement('canvas'), bandCtx = bandCanvas.getContext('2d');
+  let buildOnly = false, buildTimer = 0, build = null, paper = null, paintMemo = null;
+  const landCanvas = document.createElement('canvas'), landCtx = landCanvas.getContext('2d');
+  const buildSoon = () => {
+    clearTimeout(buildTimer);
+    buildTimer = setTimeout(function tick() {
+      if (moving) return;
+      if (raf) { buildTimer = setTimeout(tick, 16); return; }
+      buildOnly = true; try { draw(); } finally { buildOnly = false; }
+      if (build) buildTimer = setTimeout(tick, 16);
+    }, 60);
+  };
   const draw = () => {
     raf = 0;
     if (!G || !W) return;
@@ -690,7 +722,7 @@ void main(){
     const people = live();
     if (GL && S.k < vectorFrom()) ensureTexture();
     const useGL = GL && S.k < vectorFrom() && GL.ready();
-    const sphereR = R * S.k;
+    let sphereR = R * S.k;
     // las manchas y el grano del papel van pegados al mapa (no a la pantalla): así la foto recolocada y el repintado final coinciden.
     // El ancla es un punto del globo; si queda muy lejos se cambia por el centro sin mover la textura
     const pa0 = paper && projection(paper.g);
@@ -698,9 +730,9 @@ void main(){
       const g = center(), p0 = projection(g), old = pa0 ? [pa0[0] + paper.sx, pa0[1] + paper.sy] : [0, 0];
       paper = { g, sx: old[0] - p0[0], sy: old[1] - p0[1] };
     }
-    const paintMap = (sc = dpr) => {
+    const paintMap = (sc = dpr, oy = 0) => {
     setProj();
-    ctx.setTransform(sc, 0, 0, sc, 0, 0); ctx.clearRect(0, 0, W, H);
+    ctx.setTransform(sc, 0, 0, sc, 0, -oy * sc); ctx.clearRect(0, 0, W, H);
     const c = center(), r = reach();
     // ¿toda la ventana cae dentro del disco? entonces la proyección a mano es exacta (sin horizonte que recortar)
     const inside = Math.hypot(W, H) / 2 + 40 < sphereR * 0.97 && r < 1.3;
@@ -709,6 +741,10 @@ void main(){
       const V = unit(c), cr = Math.cos(r), sr = Math.sin(r);
       const M = { cl: Math.cos(S.rot[0] * RAD), sl: Math.sin(S.rot[0] * RAD), cf: Math.cos(S.rot[1] * RAD), sf: Math.sin(S.rot[1] * RAD), s: sphereR, cx: W / 2, cy: H / 2 };
       let bad = false;
+      // la foto se pinta por bandas: los trazados se calculan en la primera y las demás los reutilizan
+      const mm = fast && paintMemo;
+      if (mm && mm.bad) return false;
+      const keep = (k, fn) => !mm ? fn() : k in mm ? mm[k] : (mm[k] = fn());
       const disk = new Path2D(); disk.arc(W / 2, H / 2, sphereR, 0, 2 * Math.PI);
       const grad = ctx.createRadialGradient(W / 2 - sphereR * 0.35, H / 2 - sphereR * 0.4, sphereR * 0.1, W / 2, H / 2, sphereR);
       grad.addColorStop(0, colors.a); grad.addColorStop(1, colors.b);
@@ -716,7 +752,7 @@ void main(){
       // manchas del pergamino: multiplicar directamente sobre la forma (sin recortes de pantalla completa)
       const stainPat = ctx.createPattern(stains, 'repeat');
       const pa = projection(paper.g), ax = pa[0] + paper.sx, ay = pa[1] + paper.sy;
-      const stain = (alpha, scale, p2) => { ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = alpha; stainPat.setTransform(new DOMMatrix([scale, 0, 0, scale, ax, ay])); ctx.fillStyle = stainPat; ctx.fill(p2); ctx.restore(); };
+      const stain = (alpha, scale, p2, g = ctx) => { g.save(); g.globalCompositeOperation = 'multiply'; g.globalAlpha = alpha; stainPat.setTransform(new DOMMatrix([scale, 0, 0, scale, ax, ay])); g.fillStyle = stainPat; g.fill(p2); g.restore(); };
       stain(0.5, 1.2, disk);
       if (!provMode) wmView(ctx, projection, c, disk); // en vista provincias no: de tan cerca se ve arrastrándose
       projection.clipExtent([[-4, -4], [W + 4, H + 4]]);
@@ -737,118 +773,180 @@ void main(){
         else { gp.context(p2); for (const q of runs) gp(lineGeom(q)); }
         return p2;
       };
-      const lands = vc.map((f) => ({ f, p: cullPoly(f.geometry, V, cr, sr) }));
-      const landP = polysPath(lands.map((x) => x.p));
-      const coastRuns = []; for (const f of vk) cullLine(f.geometry.coordinates, V, cr, sr, coastRuns);
-      const coastP = linesPath(coastRuns);
-      if (bad) return false;
+      const { lands, landP, coastP } = keep('base', () => {
+        const lands = vc.map((f) => ({ f, p: cullPoly(f.geometry, V, cr, sr) }));
+        const coastRuns = []; for (const f of vk) cullLine(f.geometry.coordinates, V, cr, sr, coastRuns);
+        return { lands, landP: polysPath(lands.map((x) => x.p)), coastP: linesPath(coastRuns) };
+      });
+      if (bad) { if (mm) mm.bad = true; return false; }
       // coast shadow in the water
       ctx.lineJoin = 'round';
       ctx.strokeStyle = colors.ripple; ctx.globalAlpha = 0.16; ctx.lineWidth = 18; ctx.stroke(coastP);
       ctx.globalAlpha = 0.22; ctx.lineWidth = 8; ctx.stroke(coastP); ctx.globalAlpha = 1;
       // land
-      ctx.fillStyle = colors.land; ctx.fill(landP);
-      stain(0.75, 1, landP);
-      ctx.save(); ctx.clip(landP); ctx.strokeStyle = colors.edge; ctx.globalAlpha = 0.22; ctx.lineWidth = 22; ctx.stroke(coastP); ctx.globalAlpha = 0.3; ctx.lineWidth = 8; ctx.stroke(coastP); ctx.restore(); ctx.globalAlpha = 1;
+      // la tierra con su borde interior va en una capa aparte: el borde se pinta con 'source-atop' (solo encima de la tierra),
+      // que da lo mismo que recortar con clip() pero sin su coste (clip() con un trazado tan grande multiplica el tiempo de dibujo)
+      const cv = ctx.canvas, lc = landCtx;
+      if (landCanvas.width !== cv.width || landCanvas.height !== cv.height) { landCanvas.width = cv.width; landCanvas.height = cv.height; }
+      lc.setTransform(1, 0, 0, 1, 0, 0); lc.clearRect(0, 0, cv.width, cv.height); lc.setTransform(ctx.getTransform());
+      lc.fillStyle = colors.land; lc.fill(landP);
+      stain(0.75, 1, landP, lc);
+      lc.globalCompositeOperation = 'source-atop'; lc.strokeStyle = colors.edge; lc.lineJoin = 'round';
+      lc.globalAlpha = 0.22; lc.lineWidth = 22; lc.stroke(coastP); lc.globalAlpha = 0.3; lc.lineWidth = 8; lc.stroke(coastP);
+      lc.globalCompositeOperation = 'source-over'; lc.globalAlpha = 1;
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(landCanvas, 0, 0); ctx.restore();
       // wine wash for the places with streamers
       ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = colors.hi;
       const A = 0.6;
       ctx.globalAlpha = A;
       // trazos discontinuos: cada tramo lleva su fase, así los guiones quedan fijos al mover el mapa
-      const dashed = (runs, dash, color, width) => {
+      const dashed = (key, runsOf, dash, color, width) => {
         const per = dash[0] + dash[1];
+        const items = keep(key, () => {
+          const out = [];
+          if (!fast) projection.clipExtent(null);
+          for (const q of runsOf()) {
+            const p2 = new Path2D();
+            if (fast) { if (!emitSeg(p2, q, M, false)) { bad = true; break; } } else { gp.context(p2); gp(lineGeom(q)); }
+            out.push([p2, q.d]);
+          }
+          projection.clipExtent([[-4, -4], [W + 4, H + 4]]);
+          return out;
+        });
         ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash); ctx.lineJoin = 'round';
-        if (!fast) projection.clipExtent(null);
-        for (const q of runs) {
-          ctx.lineDashOffset = (q.d * sphereR) % per; ctx.beginPath();
-          if (fast) { if (!emitSeg(ctx, q, M, false)) { bad = true; break; } } else { gp.context(ctx); gp(lineGeom(q)); }
-          ctx.stroke();
-        }
+        for (const [p2, d] of items) { ctx.lineDashOffset = (d * sphereR) % per; ctx.stroke(p2); }
         ctx.setLineDash([]); ctx.lineDashOffset = 0;
-        projection.clipExtent([[-4, -4], [W + 4, H + 4]]);
       };
       let locP = null, vl = [];
       const wash = (cond) => polysPath(lands.filter((x) => cond(x.f.properties.code)).map((x) => x.p));
       if (!provMode) {
         const on = new Set(people.map((p) => p.country_code));
-        ctx.fill(wash((code) => on.has(code)));
+        ctx.fill(keep('w', () => wash((code) => on.has(code))));
         ctx.restore();
       } else {
         // province fully coloured; at half strength when the streamer's locality is coloured on top
-        const full = new Set(), half = new Set(), locs = [], cFull = new Set(), cHalf = new Set();
-        for (const p of people) {
-          const g = regionsOf(p, set);
-          if (g.loc) locs.push(g.loc);
-          if (g.prov) (g.loc ? half : full).add(g.prov);
-          else (g.loc ? cHalf : cFull).add(p.country_code); // only the country was chosen
-        }
-        for (const id of full) half.delete(id);
-        for (const id of cFull) cHalf.delete(id);
-        ctx.fill(wash((code) => cFull.has(code)));
+        const pv = keep('prov', () => {
+          const full = new Set(), half = new Set(), locs = [], cFull = new Set(), cHalf = new Set();
+          for (const p of people) {
+            const g = regionsOf(p, set);
+            if (g.loc) locs.push(g.loc);
+            if (g.prov) (g.loc ? half : full).add(g.prov);
+            else (g.loc ? cHalf : cFull).add(p.country_code); // only the country was chosen
+          }
+          for (const id of full) half.delete(id);
+          for (const id of cFull) cHalf.delete(id);
+          const vp = [];
+          for (const g of set.groups) if (d3.geoDistance(g.c, c) - g.rad < r) for (const f of g.fs) if (visV(f, V, r)) vp.push({ f, p: cullPoly(f.geometry, V, cr, sr) });
+          const vl = locs.filter((f) => visV(f, V, r));
+          return {
+            vp, vl, cFull: wash((code) => cFull.has(code)), cHalf: wash((code) => cHalf.has(code)),
+            full: polysPath(vp.filter((x) => full.has(x.f.properties.pid)).map((x) => x.p)),
+            half: polysPath(vp.filter((x) => half.has(x.f.properties.pid)).map((x) => x.p)),
+            locP: polysPath(vl.map((f) => cullPoly(f.geometry, V, cr, sr))),
+          };
+        });
+        ctx.fill(pv.cFull);
         ctx.globalAlpha = A * 0.5;
-        ctx.fill(wash((code) => cHalf.has(code)));
+        ctx.fill(pv.cHalf);
         ctx.globalAlpha = A;
-        const vp = [];
-        for (const g of set.groups) if (d3.geoDistance(g.c, c) - g.rad < r) for (const f of g.fs) if (visV(f, V, r)) vp.push({ f, p: cullPoly(f.geometry, V, cr, sr) });
-        ctx.fill(polysPath(vp.filter((x) => full.has(x.f.properties.pid)).map((x) => x.p)));
+        ctx.fill(pv.full);
         ctx.globalAlpha = A * 0.5;
-        ctx.fill(polysPath(vp.filter((x) => half.has(x.f.properties.pid)).map((x) => x.p)));
+        ctx.fill(pv.half);
         ctx.globalAlpha = A;
-        vl = locs.filter((f) => visV(f, V, r));
-        locP = polysPath(vl.map((f) => cullPoly(f.geometry, V, cr, sr))); ctx.fill(locP);
+        vl = pv.vl; locP = pv.locP; ctx.fill(locP);
         ctx.restore();
-        const provRuns = []; for (const x of vp) for (const pl of x.p) for (const sg of pl) cullLine(sg.pts, V, cr, sr, provRuns);
-        dashed(provRuns, [2, 3], colors.prov, 0.8);
+        dashed('pr', () => { const provRuns = []; for (const x of pv.vp) for (const pl of x.p) for (const sg of pl) cullLine(sg.pts, V, cr, sr, provRuns); return provRuns; }, [2, 3], colors.prov, 0.8);
         if (vl.length) { ctx.strokeStyle = colors.hi; ctx.lineWidth = 1.4; ctx.lineJoin = 'round'; ctx.stroke(locP); }
       }
-      if (bad) return false;
+      if (bad) { if (mm) mm.bad = true; return false; }
       // land borders dashed, coastline in ink
-      const borderRuns = []; for (const f of vb) cullLine(f.geometry.coordinates, V, cr, sr, borderRuns);
-      dashed(borderRuns, [6, 4], colors.border, provMode ? 1.4 : 1);
+      dashed('bd', () => { const borderRuns = []; for (const f of vb) cullLine(f.geometry.coordinates, V, cr, sr, borderRuns); return borderRuns; }, [6, 4], colors.border, provMode ? 1.4 : 1);
       ctx.strokeStyle = colors.line; ctx.lineWidth = provMode ? 1.8 : 1.3; ctx.lineCap = 'round'; ctx.stroke(coastP);
       // grano del papel
       ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.32; stainPat.setTransform(new DOMMatrix([380 / 512, 0, 0, 380 / 512, ax, ay])); ctx.fillStyle = stainPat; ctx.fill(disk); ctx.restore();
+      if (bad && mm) mm.bad = true;
       return !bad;
     };
-    if (!vector(inside)) { ctx.setTransform(sc, 0, 0, sc, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.setLineDash([]); ctx.clearRect(0, 0, W, H); vector(false); }
+    if (!vector(inside)) { ctx.setTransform(sc, 0, 0, sc, 0, -oy * sc); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.setLineDash([]); ctx.clearRect(0, 0, W, H); vector(false); }
     };
-    // ¿sirve la foto guardada para la vista actual? (mismos datos, zoom parecido y el centro aún lejos del borde de la foto)
-    const snapM = Math.round(Math.max(W, H) * 0.3);
-    const snapSig = (G.hi ? 'h' : 'l') + people.length + '|' + W + 'x' + H + '|' + dpr + '|' + colors.hi;
-    const snapFresh = () => {
-      const i = GL.snap(); if (!i || i.sig !== snapSig) return false;
-      const ratio = sphereR / i.s; if (ratio < 0.88 || ratio > 1.14) return false;
-      const p = projection(i.c);
-      return !!p && Math.hypot(p[0] - W / 2, p[1] - H / 2) < snapM * 0.85;
+    // ¿sirve la foto para la vista actual? (mismos datos, zoom parecido y su centro aún lejos del borde de la foto)
+    const sdx = (glCanvas && glCanvas.width / W) || dpr;
+    // margen de la foto: un 30 % por cada lado, pero sin pasar del borde de la Tierra (cerca del borde el mapa se calcula por el camino lento y tarda muchísimo)
+    const marginFor = (s) => {
+      const L = 2 * Math.min(0.97 * s - 44, 0.935 * s), a = W + H, q = a * a - 2 * (W * W + H * H - L * L);
+      const room = q > 0 ? (-a + Math.sqrt(q)) / 4 : 0;
+      return Math.max(0, Math.min(Math.max(W, H) * 0.3, room));
     };
-    // al arrastrar, la foto se pinta adelantada en la dirección del movimiento: así dura casi el doble antes de tener que repintarla
-    const prevRot = S._prevRot || S.rot; S._prevRot = S.rot.slice();
+    const snapSig = (G.hi ? 'h' : 'l') + (provMode ? 'p' : 'c') + people.length + '|' + W + 'x' + H + '|' + dpr + '|' + colors.hi;
+    const snapDist = (i) => { const p = i && projection(i.c); return p ? Math.hypot(p[0] - W / 2, p[1] - H / 2) : Infinity; };
+    // sirve si su zoom no se aleja mucho del actual: reducida se ve nítida y ampliada como mucho un 25 % (solo unas imágenes, mientras se rehace)
+    const fresh = (i) => !!i && i.sig === snapSig && sphereR / i.s >= 0.65 && sphereR / i.s <= 1.25 && covers(i);
+    // la pantalla entera cae dentro de la foto (con su zoom y lo que se ha desplazado)
+    function covers(i) { const r = sphereR / i.s, d = snapDist(i); return (W / 2 + d) / r <= W / 2 + 0.9 * i.m + 0.5 && (H / 2 + d) / r <= H / 2 + 0.9 * i.m + 0.5; }
+    const exact = (i) => !!i && Math.abs(sphereR / i.s - 1) < 1e-4;
+    const still = (i) => exact(i) && i.rot[0] === S.rot[0] && i.rot[1] === S.rot[1];
+    // al acercar, la foto siguiente se pinta ya más cerca (adelantada al zoom), así se ve reducida y nítida
+    const prevR = S._prevR, prevRot = S._prevRot || S.rot;
+    if (!buildOnly) { S._prevR = sphereR; S._prevRot = S.rot.slice(); }
+    const zooming = moving && !buildOnly && prevR !== undefined && Math.abs(sphereR - prevR) > 1e-6;
     const dRot = [S.rot[0] - prevRot[0], S.rot[1] - prevRot[1]];
-    const makeSnap = () => {
-      const W0 = W, H0 = H, sw = W + 2 * snapM, sh = H + 2 * snapM;
-      const rot1 = S.rot, v = Math.hypot(dRot[0], dRot[1]) * RAD * sphereR;
-      if (moving && v > 0.5 && v < snapM) { const f = 0.7 * snapM / v; S.rot = [S.rot[0] + dRot[0] * f, Math.max(-89, Math.min(89, S.rot[1] + dRot[1] * f))]; }
-      const sd = Math.min(dpr, GL.maxT / sw, GL.maxT / sh);
-      const cw = Math.round(sw * sd), chh = Math.round(sh * sd);
-      if (snapCanvas.width !== cw || snapCanvas.height !== chh) { snapCanvas.width = cw; snapCanvas.height = chh; }
-      const info = { cx: sw / 2, cy: sh / 2, s: sphereR, rot: S.rot.slice(), w: sw, h: sh, c: center(), sig: snapSig };
-      W = sw; H = sh; ctx = snapCtx; path.context(ctx);
-      try { paintMap(sd); }
-      finally { S.rot = rot1; W = W0; H = H0; ctx = screenCtx; path.context(ctx); setProj(); }
-      GL.setSnap(snapCanvas, info);
+    // imágenes que le quedan a la foto actual al ritmo de ahora: la siguiente se empieza a tiempo para estar lista antes
+    // cuánto le queda a la foto (en píxeles) antes de dejar de servir, por desplazamiento o por zoom, y a cuántas imágenes está
+    const headroom = (i) => {
+      const r = sphereR / i.s, d = snapDist(i);
+      return Math.min(W / 2 + 0.9 * i.m - (W / 2 + d) / r, H / 2 + 0.9 * i.m - (H / 2 + d) / r, (1.25 - r) * W, (r - 0.65) * W);
     };
+    const framesLeft = (i) => { const h = headroom(i), q = i.hp; i.hp = h; return q === undefined || q <= h ? Infinity : h / (q - h); };
+    // pintar dentro de la foto: otro tamaño, otra rotación y el mismo papel durante todas sus franjas
+    const inSnap = (b, fn) => {
+      const W0 = W, H0 = H, r0 = S.rot, k0 = S.k, s0 = sphereR, p0 = paper;
+      W = b.info.w; H = b.info.h; S.rot = b.info.rot; S.k = b.info.s / R; sphereR = b.info.s; paper = b.paper; ctx = bandCtx; path.context(ctx); setProj();
+      try { return fn(); } finally { W = W0; H = H0; S.rot = r0; S.k = k0; sphereR = s0; paper = p0; ctx = screenCtx; path.context(ctx); setProj(); }
+    };
+    // una franja de la foto nueva; al arrastrar se adelanta en la dirección del movimiento para durar más
+    const buildStep = () => {
+      if (!build || build.info.sig !== snapSig || sphereR / build.info.s < 0.6 || sphereR / build.info.s > 1.25) {
+        const g = zooming ? sphereR / prevR : 1, s1 = sphereR * (g > 1 ? Math.min(1.45, g ** SNAP_BANDS / 0.75) : Math.max(0.7, g ** SNAP_BANDS));
+        const snapPx = Math.round(marginFor(s1) * sdx);
+        let sd = sdx, cw = glCanvas.width + 2 * snapPx, ch = glCanvas.height + 2 * snapPx;
+        if (cw > GL.maxT || ch > GL.maxT) { const f = GL.maxT / Math.max(cw, ch); sd *= f; cw = Math.floor(cw * f); ch = Math.floor(ch * f); }
+        const sw = cw / sd, sh = ch / sd, m = snapPx / sdx, v = Math.hypot(dRot[0], dRot[1]) * RAD * sphereR;
+        let rot = S.rot.slice();
+        if (moving && v > 0.5) { const f = Math.min(0.8 * m, 0.55 * m + SNAP_BANDS * v) / v; rot = [rot[0] + dRot[0] * f, Math.max(-89, Math.min(89, rot[1] + dRot[1] * f))]; }
+        const bh = Math.ceil(ch / SNAP_BANDS);
+        build = { i: 0, sd, ch, bh, paper, memo: {}, info: { cx: sw / 2, cy: sh / 2, m: (cw - glCanvas.width) / 2 / sd, s: s1, rot, w: sw, h: sh, sig: snapSig } };
+        build.info.c = inSnap(build, center);
+        if (bandCanvas.width !== cw || bandCanvas.height !== bh) { bandCanvas.width = cw; bandCanvas.height = bh; }
+        GL.snapBegin(cw, ch);
+      }
+      const b = build, y = b.i * b.bh, h = Math.min(b.bh, b.ch - y);
+      paintMemo = b.memo; try { inSnap(b, () => paintMap(b.sd, y / b.sd)); } finally { paintMemo = null; }
+      GL.snapBand(bandCanvas, y, h);
+      if (++b.i * b.bh >= b.ch) { GL.snapSwap(b.info); build = null; if (buildOnly) schedule(); }
+    };
+    const buildAll = () => { build = null; do buildStep(); while (build); };
     const canSnap = GL && GL.canSnap() && !useGL && S.k >= vectorFrom();
-    if (snapOnly) { if (canSnap && !snapFresh()) makeSnap(); return; }
+    // en reposo la foto se rehace (a franjas, sin prisa) exactamente en la vista actual: entonces se ve igual que pintada directa
+    if (buildOnly) {
+      if (!canSnap || moving || still(GL.snap())) { build = null; return; }
+      if (build && !(build.info.s === sphereR && build.info.rot[0] === S.rot[0] && build.info.rot[1] === S.rot[1])) build = null;
+      buildStep();
+      return;
+    }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
     if (useGL) {
       GL.render();
-    } else if (canSnap && moving) {
-      if (!snapFresh()) makeSnap();
+    } else if (canSnap) {
+      // de cerca la pantalla siempre muestra la foto recolocada: pintar el mapa entero directo en pantalla es lo que más cuesta
+      if (!fresh(GL.snap())) buildAll();
+      const i = GL.snap();
       GL.reproject();
+      // en marcha solo se prepara otra foto cuando esta se va a acabar (o, quieto el zoom, para volver a la nitidez exacta)
+      if (moving) { const fl = framesLeft(i); if (build || fl < SNAP_BANDS + 3 || (!zooming && !exact(i))) buildStep(); }
+      else if (!still(i)) buildSoon();
     } else {
       if (GL) GL.clear();
       paintMap();
-      if (canSnap) buildSnapSoon();
     }
     ctx.beginPath(); ctx.arc(W / 2, H / 2, sphereR, 0, 2 * Math.PI); ctx.strokeStyle = colors.line; ctx.lineWidth = 1.5; ctx.stroke();
 
