@@ -223,6 +223,25 @@
   "age": 33
  },
  {
+  "twitch": "kearo",
+  "name": "El Kearo",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/139df6aa-198f-42c7-8667-8ae21e03bb28-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/kearo001"
+  },
+  "lat": 41.8781,
+  "lon": -87.6298,
+  "country": "Estados Unidos",
+  "country_code": "USA",
+  "country_iso2": "US",
+  "province": "Illinois",
+  "province_id": "p4355",
+  "city": "Chicago",
+  "nationality": "MX",
+  "tz": "America/Chicago",
+  "age": 43
+ },
+ {
   "twitch": "ladyashbringer",
   "name": "Ash",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/ebdaa60b-1a7e-4d67-8205-700fda57a3fa-profile_image-300x300.png",
@@ -322,6 +341,23 @@
   "city": "",
   "nationality": "ES",
   "tz": "America/Argentina/Buenos_Aires"
+ },
+ {
+  "twitch": "shiryuu5",
+  "name": "shiryuu5",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/15befc56-4eea-4cf5-83b4-95a2a5c1852c-profile_image-300x300.jpg",
+  "socials": {},
+  "lat": -36.6769,
+  "lon": -60.5588,
+  "country": "Argentina",
+  "country_code": "ARG",
+  "country_iso2": "AR",
+  "province": "Buenos Aires",
+  "province_id": "p1725",
+  "city": "",
+  "nationality": "AR",
+  "tz": "America/Argentina/Buenos_Aires",
+  "age": 31
  },
  {
   "twitch": "wallsides",
