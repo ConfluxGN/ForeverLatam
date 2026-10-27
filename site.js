@@ -214,7 +214,8 @@
   });
 
   // ---------- globe ----------
-  const stage = $('stage'), canvas = $('globe'), ctx = canvas.getContext('2d'), labels = $('labels'), stemsEl = $('stems');
+  const stage = $('stage'), canvas = $('globe'), screenCtx = canvas.getContext('2d'), labels = $('labels'), stemsEl = $('stems');
+  let ctx = screenCtx; // el mapa de cerca a veces se pinta en la foto de fuera de pantalla (ver snapshot)
   const glCanvas = $('globe-gl');
   const projection = d3.geoOrthographic().clipAngle(90).precision(0.6);
   const path = d3.geoPath(projection, ctx);
@@ -593,7 +594,68 @@ void main(){
       return true;
     };
     const clear = () => { gl.viewport(0, 0, glCanvas.width, glCanvas.height); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); };
-    return { loadBase, paintFallback, paintMask, render, clear, base: () => baseState, ready: () => ready && maskReady, maxK: TW / (2 * Math.PI * 280) / 1.1 };
+    // vista provincias en movimiento: la foto del mapa (pintada una vez, más grande que la pantalla) se recoloca sobre la esfera píxel a píxel con la rotación actual.
+    // Es la proyección exacta (sin deformar), así que el mapa se ve igual pero sin repintar países, provincias y texturas en cada imagen
+    const rfs = `#version 300 es
+precision highp float;
+uniform sampler2D snap; uniform vec2 res; uniform vec3 view; uniform vec2 rot; uniform float dpr;
+uniform vec3 view0; uniform vec2 rot0; uniform vec2 size0;
+out vec4 o;
+void main(){
+  vec2 px = vec2(gl_FragCoord.x, res.y - gl_FragCoord.y) / dpr;
+  float x = (px.x - view.x) / view.z, y = (view.y - px.y) / view.z;
+  float r2 = x*x + y*y;
+  if (r2 > 1.0) discard;
+  float X = sqrt(1.0 - r2), Y = x, Z = y;
+  float cb = cos(rot.y), sb = sin(rot.y);
+  float Xw = X*cb + Z*sb, Zw = Z*cb - X*sb;
+  float lon = atan(Y, Xw) - rot.x;
+  float l2 = lon + rot0.x, cl = sqrt(max(0.0, 1.0 - Zw*Zw));
+  float Xa = cl * cos(l2), Ya = cl * sin(l2);
+  float c0 = cos(rot0.y), s0 = sin(rot0.y);
+  float X0 = Xa*c0 - Zw*s0, Z0 = Xa*s0 + Zw*c0;
+  if (X0 < 0.0) discard;
+  vec2 q = vec2(view0.x + Ya * view0.z, view0.y - Z0 * view0.z) / size0;
+  if (q.x < 0.0 || q.y < 0.0 || q.x > 1.0 || q.y > 1.0) discard;
+  o = texture(snap, q);
+}`;
+    let rprog = null, ru = null;
+    const stex = gl.createTexture();
+    try {
+      rprog = gl.createProgram(); gl.attachShader(rprog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(rprog, sh(gl.FRAGMENT_SHADER, rfs)); gl.bindAttribLocation(rprog, loc, 'p'); gl.linkProgram(rprog);
+      if (!gl.getProgramParameter(rprog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(rprog));
+      const RU = (n) => gl.getUniformLocation(rprog, n);
+      ru = { snap: RU('snap'), res: RU('res'), view: RU('view'), rot: RU('rot'), dpr: RU('dpr'), view0: RU('view0'), rot0: RU('rot0'), size0: RU('size0') };
+    } catch (e) { console.warn('Reproyección off:', e); rprog = null; }
+    let snapInfo = null;
+    const setSnap = (cv, info) => {
+      gl.bindTexture(gl.TEXTURE_2D, stex);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      snapInfo = info;
+    };
+    const reproject = () => {
+      gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(rprog);
+      gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, stex); gl.uniform1i(ru.snap, 3);
+      gl.uniform2f(ru.res, glCanvas.width, glCanvas.height);
+      gl.uniform3f(ru.view, W / 2, H / 2, R * S.k);
+      gl.uniform2f(ru.rot, S.rot[0] * Math.PI / 180, S.rot[1] * Math.PI / 180);
+      gl.uniform1f(ru.dpr, glCanvas.width / W);
+      const i = snapInfo;
+      gl.uniform3f(ru.view0, i.cx, i.cy, i.s);
+      gl.uniform2f(ru.rot0, i.rot[0] * Math.PI / 180, i.rot[1] * Math.PI / 180);
+      gl.uniform2f(ru.size0, i.w, i.h);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.useProgram(prog);
+    };
+    return { loadBase, paintFallback, paintMask, render, clear, canSnap: () => !!rprog, setSnap, snap: () => snapInfo, dropSnap: () => { snapInfo = null; }, reproject, maxT, base: () => baseState, ready: () => ready && maskReady, maxK: TW / (2 * Math.PI * 280) / 1.1 };
   })();
   let texDirty = true, texKey = '';
   const ensureTexture = () => {
@@ -614,18 +676,32 @@ void main(){
   let moving = false, settleTimer = 0;
   const markMoving = () => { moving = true; clearTimeout(settleTimer); settleTimer = setTimeout(() => { moving = false; schedule(); }, 180); };
   const chipEl = $('chip');
+  // la foto del mapa de cerca: se pinta en un lienzo aparte, un 30 % más grande por cada lado, y la tarjeta gráfica la recoloca al arrastrar
+  const snapCanvas = document.createElement('canvas'), snapCtx = snapCanvas.getContext('2d');
+  let snapOnly = false, snapTimer = 0, paper = null;
+  const buildSnapSoon = () => { clearTimeout(snapTimer); snapTimer = setTimeout(() => { if (!moving && !raf) { snapOnly = true; try { draw(); } finally { snapOnly = false; } } }, 300); };
   const draw = () => {
     raf = 0;
     if (!G || !W) return;
-    projection.translate([W / 2, H / 2]).scale(R * S.k).rotate([S.rot[0], S.rot[1], 0]).clipExtent([[-4, -4], [W + 4, H + 4]]);
+    const setProj = () => projection.translate([W / 2, H / 2]).scale(R * S.k).rotate([S.rot[0], S.rot[1], 0]).clipExtent([[-4, -4], [W + 4, H + 4]]);
+    setProj();
     const dpr = DPR();
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
     const provMode = S.k >= PROV_K;
     const people = live();
-    const c = center(), r = reach();
     if (GL && S.k < vectorFrom()) ensureTexture();
     const useGL = GL && S.k < vectorFrom() && GL.ready();
     const sphereR = R * S.k;
+    // las manchas y el grano del papel van pegados al mapa (no a la pantalla): así la foto recolocada y el repintado final coinciden.
+    // El ancla es un punto del globo; si queda muy lejos se cambia por el centro sin mover la textura
+    const pa0 = paper && projection(paper.g);
+    if (!pa0 || Math.hypot(pa0[0] - W / 2, pa0[1] - H / 2) > Math.max(W, H)) {
+      const g = center(), p0 = projection(g), old = pa0 ? [pa0[0] + paper.sx, pa0[1] + paper.sy] : [0, 0];
+      paper = { g, sx: old[0] - p0[0], sy: old[1] - p0[1] };
+    }
+    const paintMap = (sc = dpr) => {
+    setProj();
+    ctx.setTransform(sc, 0, 0, sc, 0, 0); ctx.clearRect(0, 0, W, H);
+    const c = center(), r = reach();
     // ¿toda la ventana cae dentro del disco? entonces la proyección a mano es exacta (sin horizonte que recortar)
     const inside = Math.hypot(W, H) / 2 + 40 < sphereR * 0.97 && r < 1.3;
     const vector = (fast) => {
@@ -639,7 +715,8 @@ void main(){
       ctx.fillStyle = grad; ctx.fill(disk);
       // manchas del pergamino: multiplicar directamente sobre la forma (sin recortes de pantalla completa)
       const stainPat = ctx.createPattern(stains, 'repeat');
-      const stain = (alpha, scale, p2) => { ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = alpha; stainPat.setTransform(new DOMMatrix([scale, 0, 0, scale, 0, 0])); ctx.fillStyle = stainPat; ctx.fill(p2); ctx.restore(); };
+      const pa = projection(paper.g), ax = pa[0] + paper.sx, ay = pa[1] + paper.sy;
+      const stain = (alpha, scale, p2) => { ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = alpha; stainPat.setTransform(new DOMMatrix([scale, 0, 0, scale, ax, ay])); ctx.fillStyle = stainPat; ctx.fill(p2); ctx.restore(); };
       stain(0.5, 1.2, disk);
       if (!provMode) wmView(ctx, projection, c, disk); // en vista provincias no: de tan cerca se ve arrastrándose
       projection.clipExtent([[-4, -4], [W + 4, H + 4]]);
@@ -730,14 +807,48 @@ void main(){
       dashed(borderRuns, [6, 4], colors.border, provMode ? 1.4 : 1);
       ctx.strokeStyle = colors.line; ctx.lineWidth = provMode ? 1.8 : 1.3; ctx.lineCap = 'round'; ctx.stroke(coastP);
       // grano del papel
-      ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.32; stainPat.setTransform(new DOMMatrix([380 / 512, 0, 0, 380 / 512, 0, 0])); ctx.fillStyle = stainPat; ctx.fill(disk); ctx.restore();
+      ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.32; stainPat.setTransform(new DOMMatrix([380 / 512, 0, 0, 380 / 512, ax, ay])); ctx.fillStyle = stainPat; ctx.fill(disk); ctx.restore();
       return !bad;
     };
+    if (!vector(inside)) { ctx.setTransform(sc, 0, 0, sc, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.setLineDash([]); ctx.clearRect(0, 0, W, H); vector(false); }
+    };
+    // ¿sirve la foto guardada para la vista actual? (mismos datos, zoom parecido y el centro aún lejos del borde de la foto)
+    const snapM = Math.round(Math.max(W, H) * 0.3);
+    const snapSig = (G.hi ? 'h' : 'l') + people.length + '|' + W + 'x' + H + '|' + dpr + '|' + colors.hi;
+    const snapFresh = () => {
+      const i = GL.snap(); if (!i || i.sig !== snapSig) return false;
+      const ratio = sphereR / i.s; if (ratio < 0.88 || ratio > 1.14) return false;
+      const p = projection(i.c);
+      return !!p && Math.hypot(p[0] - W / 2, p[1] - H / 2) < snapM * 0.85;
+    };
+    // al arrastrar, la foto se pinta adelantada en la dirección del movimiento: así dura casi el doble antes de tener que repintarla
+    const prevRot = S._prevRot || S.rot; S._prevRot = S.rot.slice();
+    const dRot = [S.rot[0] - prevRot[0], S.rot[1] - prevRot[1]];
+    const makeSnap = () => {
+      const W0 = W, H0 = H, sw = W + 2 * snapM, sh = H + 2 * snapM;
+      const rot1 = S.rot, v = Math.hypot(dRot[0], dRot[1]) * RAD * sphereR;
+      if (moving && v > 0.5 && v < snapM) { const f = 0.7 * snapM / v; S.rot = [S.rot[0] + dRot[0] * f, Math.max(-89, Math.min(89, S.rot[1] + dRot[1] * f))]; }
+      const sd = Math.min(dpr, GL.maxT / sw, GL.maxT / sh);
+      const cw = Math.round(sw * sd), chh = Math.round(sh * sd);
+      if (snapCanvas.width !== cw || snapCanvas.height !== chh) { snapCanvas.width = cw; snapCanvas.height = chh; }
+      const info = { cx: sw / 2, cy: sh / 2, s: sphereR, rot: S.rot.slice(), w: sw, h: sh, c: center(), sig: snapSig };
+      W = sw; H = sh; ctx = snapCtx; path.context(ctx);
+      try { paintMap(sd); }
+      finally { S.rot = rot1; W = W0; H = H0; ctx = screenCtx; path.context(ctx); setProj(); }
+      GL.setSnap(snapCanvas, info);
+    };
+    const canSnap = GL && GL.canSnap() && !useGL && S.k >= vectorFrom();
+    if (snapOnly) { if (canSnap && !snapFresh()) makeSnap(); return; }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
     if (useGL) {
       GL.render();
+    } else if (canSnap && moving) {
+      if (!snapFresh()) makeSnap();
+      GL.reproject();
     } else {
       if (GL) GL.clear();
-      if (!vector(inside)) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.setLineDash([]); ctx.clearRect(0, 0, W, H); vector(false); }
+      paintMap();
+      if (canSnap) buildSnapSoon();
     }
     ctx.beginPath(); ctx.arc(W / 2, H / 2, sphereR, 0, 2 * Math.PI); ctx.strokeStyle = colors.line; ctx.lineWidth = 1.5; ctx.stroke();
 
