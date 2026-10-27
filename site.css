@@ -94,11 +94,11 @@ button, input, select { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: no-preference) {
   .bob { }
   @keyframes bob { from { translate: 0 0; } to { translate: 0 -5px; } }
-  @keyframes pop { from { transform: translateX(calc(-50% + var(--shift, 0px))) scale(.92); opacity: .4; } to { transform: translateX(calc(-50% + var(--shift, 0px))) scale(1); opacity: 1; } }
+  @keyframes pop { from { transform: translateX(-50%) scale(.92); opacity: .4; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
 }
 .pin.open { z-index: 999 !important; }
 .pin.open .pill { display: none; }
-.card { position: absolute; bottom: 27px; left: 0; transform: translateX(calc(-50% + var(--shift, 0px))); width: min(290px, 78vw); background: var(--surface); border: 1px solid var(--accent); border-radius: 18px; box-shadow: var(--shadow); padding: 14px; pointer-events: auto; white-space: normal; }
+.card { position: absolute; bottom: 27px; left: 0; transform: translateX(-50%); will-change: transform; width: min(290px, 78vw); background: var(--surface); border: 1px solid var(--accent); border-radius: 18px; box-shadow: var(--shadow); padding: 14px; pointer-events: auto; white-space: normal; }
 .card-head { display: flex; gap: 12px; align-items: center; }
 .card-head .av { width: 58px; height: 58px; font-size: 22px; }
 .card-name { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--fg); text-decoration: none; display: block; }
@@ -108,7 +108,7 @@ button, input, select { font: inherit; color: inherit; }
 .facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 12px 0; font-size: 13px; }
 .facts dt { color: var(--muted); }
 .facts dd { margin: 0; font-weight: 600; min-width: 0; }
-.clock { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 18px; }
+.clock { contain: content; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 18px; }
 .clock small { font-family: var(--font-body); color: var(--muted); font-weight: 500; font-size: 12px; margin-left: 6px; }
 .live { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 8px; font-weight: 700; text-decoration: none; font-size: 14px; }
 
