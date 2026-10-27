@@ -266,6 +266,25 @@
   "tz": "America/Bogota"
  },
  {
+  "twitch": "mandriloh",
+  "name": "Mandriloh",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/f1ac770a-53cb-4450-bc47-5c5d8e594876-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/mandriloh"
+  },
+  "lat": -35.6751,
+  "lon": -71.543,
+  "country": "Chile",
+  "country_code": "CHL",
+  "country_iso2": "CL",
+  "province": "",
+  "province_id": "",
+  "city": "",
+  "nationality": "CL",
+  "tz": "America/Santiago",
+  "age": 32
+ },
+ {
   "twitch": "meiirel",
   "name": "Meiirel",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/ac17695c-f4c0-468f-b3e0-058df48bb938-profile_image-300x300.png",
@@ -356,6 +375,23 @@
   "nationality": "CO",
   "tz": "America/Bogota",
   "age": 35
+ },
+ {
+  "twitch": "zeodeon",
+  "name": "zeodeon",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/b3d3ba49-f919-4d92-bcca-d48bc987a475-profile_image-300x300.png",
+  "socials": {},
+  "lat": -34.6502,
+  "lon": -58.453,
+  "country": "Argentina",
+  "country_code": "ARG",
+  "country_iso2": "AR",
+  "province": "Ciudad de Buenos Aires",
+  "province_id": "p1745",
+  "city": "",
+  "nationality": "AR",
+  "tz": "America/Argentina/Buenos_Aires",
+  "age": 33
  },
  {
   "twitch": "zippyt3d",
