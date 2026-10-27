@@ -641,7 +641,7 @@ void main(){
       const stainPat = ctx.createPattern(stains, 'repeat');
       const stain = (alpha, scale, p2) => { ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = alpha; stainPat.setTransform(new DOMMatrix([scale, 0, 0, scale, 0, 0])); ctx.fillStyle = stainPat; ctx.fill(p2); ctx.restore(); };
       stain(0.5, 1.2, disk);
-      wmView(ctx, projection, c, disk);
+      if (!provMode) wmView(ctx, projection, c, disk); // en vista provincias no: de tan cerca se ve arrastrándose
       projection.clipExtent([[-4, -4], [W + 4, H + 4]]);
       if (S.k < 6) { ctx.beginPath(); path(graticule); ctx.strokeStyle = colors.grid; ctx.lineWidth = 0.6; ctx.globalAlpha = 0.3; ctx.setLineDash([5, 4]); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; }
       const vc = cset.parts.filter((f) => visV(f, V, r));
