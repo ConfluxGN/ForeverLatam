@@ -94,7 +94,10 @@
       return { code, fs, c, rad: d3.max(fs, (f) => d3.geoDistance(c, f.c) + f.rad) };
     });
     const provById = new Map(provinces.map((f) => [f.properties.pid, f]));
-    return { countries, parts, provinces, byCode, groups, provById, ...meshArcs(ct) };
+    // tramos de los límites de provincia, cada uno una vez (para el mapa en la tarjeta gráfica)
+    const t = pt.transform, parcs = [];
+    for (const a of pt.arcs) { let x = 0, y = 0; if (a.length > 1) parcs.push(a.map((q) => { if (!t) return q; x += q[0]; y += q[1]; return [x * t.scale[0] + t.translate[0], y * t.scale[1] + t.translate[1]]; })); }
+    return { countries, parts, provinces, byCode, groups, provById, parcs, ...meshArcs(ct) };
   };
   const ASSET_V = '20261025k';
   const getJson = (u) => fetch(u + '?v=' + ASSET_V).then((r) => { if (!r.ok) throw new Error(u); return r.json(); });
@@ -681,7 +684,342 @@ void main(){
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.useProgram(prog);
     };
-    return { loadBase, paintFallback, paintMask, render, clear, canSnap: () => !!rprog, snapBegin, snapBand, snapSwap, snap: () => snapInfo, dropSnap: () => { snapInfo = null; }, reproject, maxT, base: () => baseState, ready: () => ready && maskReady, maxK: TW / (2 * Math.PI * 280) / 1.1 };
+    return { gl, sh, gtex, loadBase, paintFallback, paintMask, render, clear, canSnap: () => !!rprog, snapBegin, snapBand, snapSwap, snap: () => snapInfo, dropSnap: () => { snapInfo = null; }, reproject, maxT, base: () => baseState, ready: () => ready && maskReady, maxK: TW / (2 * Math.PI * 280) / 1.1 };
+  })();
+  // ---------- mapa de cerca en la tarjeta gráfica ----------
+  // Como los mapas profesionales (Mapbox, Google Earth): la tierra se convierte una sola vez en triángulos sobre la esfera y
+  // las costas, fronteras y provincias en tramos, y todo se guarda en la tarjeta gráfica. En cada imagen solo cambian el giro
+  // y el zoom: el procesador no recalcula ni repinta nada, así que acercar, alejar y arrastrar cuestan lo mismo a cualquier zoom.
+  const VG = (() => {
+    if (!GL || typeof earcut !== 'function') return null;
+    const gl = GL.gl, sh = GL.sh;
+    const D2R = Math.PI / 180;
+    const prog = (vsrc, fsrc) => {
+      const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, vsrc)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fsrc)); gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+      const u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+      for (let i = 0; i < n; i++) { const a = gl.getActiveUniform(p, i); u[a.name] = gl.getUniformLocation(p, a.name); }
+      return { p, u };
+    };
+    const H = '#version 300 es\nprecision highp float;\n';
+    // tramo de línea: un rectángulo alrededor del segmento proyectado; el píxel mide su distancia al segmento (bordes suaves y uniones redondas)
+    const lineVS = H + `layout(location=0) in vec3 a; layout(location=1) in vec3 b; layout(location=2) in vec2 dd;
+uniform mat3 M; uniform vec3 view; uniform vec2 res; uniform float hw;
+out vec2 P; flat out vec2 A; flat out vec2 B; flat out vec2 D;
+void main(){
+  vec3 ra = M * a, rb = M * b;
+  if (ra.x < 0.0 || rb.x < 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+  vec2 pa = view.xy + view.z * vec2(ra.y, -ra.z), pb = view.xy + view.z * vec2(rb.y, -rb.z);
+  vec2 t = pb - pa; float L = length(t); vec2 dir = L > 1e-4 ? t / L : vec2(1.0, 0.0), nr = vec2(-dir.y, dir.x);
+  float sx = (gl_VertexID & 1) == 0 ? -1.0 : 1.0, sy = gl_VertexID < 2 ? -1.0 : 1.0;
+  vec2 p = (sx < 0.0 ? pa : pb) + dir * hw * sx + nr * hw * sy;
+  P = p; A = pa; B = pb; D = dd;
+  gl_Position = vec4(p.x / res.x * 2.0 - 1.0, 1.0 - p.y / res.y * 2.0, 0.0, 1.0);
+}`;
+    // cada canal guarda la cobertura de un grosor (o de una capa); al sumar tramos se queda el máximo, como un trazo de verdad
+    const lineFS = H + `in vec2 P; flat in vec2 A; flat in vec2 B; flat in vec2 D;
+uniform vec4 hw4; uniform vec3 dash;
+out vec4 o;
+void main(){
+  vec2 ab = B - A; float l2 = dot(ab, ab);
+  float t = l2 > 1e-8 ? clamp(dot(P - A, ab) / l2, 0.0, 1.0) : 0.0;
+  float d = length(P - A - ab * t);
+  vec4 c = clamp(hw4 + 0.5 - d, 0.0, 1.0) * min(vec4(1.0), 2.0 * hw4);
+  if (dash.y > 0.0) { float u = mod(mix(D.x, D.y, t) * dash.z, dash.y); c *= clamp(min(u, dash.x - u) + 0.5, 0.0, 1.0); }
+  o = c;
+}`;
+    const triVS = H + `layout(location=0) in vec3 a; layout(location=1) in float w;
+uniform mat3 M; uniform vec3 view; uniform vec2 res;
+out float z; out float wt;
+void main(){
+  vec3 r = M * a; z = r.x; wt = w;
+  vec2 p = view.xy + view.z * vec2(r.y, -r.z);
+  gl_Position = vec4(p.x / res.x * 2.0 - 1.0, 1.0 - p.y / res.y * 2.0, 0.0, 1.0);
+}`;
+    // tierra: color, manchas del pergamino y su borde interior más oscuro (solo encima de la tierra)
+    const landFS = H + `in float z; in float wt;
+uniform sampler2D grain; uniform sampler2D L1; uniform vec2 res; uniform float dpr; uniform vec2 anc; uniform vec3 land; uniform vec4 edge;
+out vec4 o;
+void main(){
+  if (z < 0.0) discard;
+  vec2 px = vec2(gl_FragCoord.x, res.y - gl_FragCoord.y) / dpr;
+  vec3 c = land * mix(vec3(1.0), texture(grain, (px - anc) / 512.0).rgb, 0.75);
+  vec4 l = texelFetch(L1, ivec2(gl_FragCoord.xy), 0);
+  c = mix(c, edge.rgb, edge.a * 0.22 * l.b); c = mix(c, edge.rgb, edge.a * 0.3 * l.g);
+  o = vec4(c, 1.0);
+}`;
+    // lugares con streamers: se multiplica por el color vino (como 'multiply' del lienzo)
+    const washFS = H + `in float z; in float wt;
+uniform vec3 hi;
+out vec4 o;
+void main(){ if (z < 0.0) discard; o = vec4(mix(vec3(1.0), hi, wt), 1.0); }`;
+    const fullVS = H + 'layout(location=0) in vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }';
+    // agua: degradado del disco (el mismo que createRadialGradient), manchas, cuadrícula y las ondas de la costa
+    const waterFS = H + `uniform sampler2D grain; uniform sampler2D L1; uniform vec2 res; uniform float dpr; uniform vec3 view; uniform vec2 anc;
+uniform vec3 ca; uniform vec3 cb; uniform vec4 grid; uniform vec4 ripple;
+out vec4 o;
+void main(){
+  vec2 px = vec2(gl_FragCoord.x, res.y - gl_FragCoord.y) / dpr;
+  float s = view.z, cov = clamp((s - length(px - view.xy)) * dpr + 0.5, 0.0, 1.0);
+  if (cov <= 0.0) discard;
+  vec2 c0 = view.xy - vec2(0.35, 0.4) * s, dc = view.xy - c0, q = px - c0;
+  float r0 = 0.1 * s, dr = 0.9 * s;
+  float A = dot(dc, dc) - dr * dr, Bq = dot(q, dc) + r0 * dr, C = dot(q, q) - r0 * r0;
+  float t = clamp((Bq - sqrt(max(0.0, Bq * Bq - A * C))) / A, 0.0, 1.0);
+  vec3 c = mix(ca, cb, t) * mix(vec3(1.0), texture(grain, (px - anc) / (1.2 * 512.0)).rgb, 0.5);
+  vec4 l = texelFetch(L1, ivec2(gl_FragCoord.xy), 0);
+  c = mix(c, grid.rgb, grid.a * 0.3 * l.a);
+  c = mix(c, ripple.rgb, ripple.a * 0.16 * l.r); c = mix(c, ripple.rgb, ripple.a * 0.22 * l.g);
+  o = vec4(c, 1.0) * cov;
+}`;
+    // tinta encima: provincias, localidades, fronteras y costa
+    const inkFS = H + `uniform sampler2D L2; uniform vec4 cprov; uniform vec4 cloc; uniform vec4 cbord; uniform vec4 cline;
+out vec4 o;
+vec4 over(vec4 d, vec4 c, float k){ vec4 s = vec4(c.rgb, 1.0) * (c.a * k); return s + d * (1.0 - s.a); }
+void main(){
+  vec4 l = texelFetch(L2, ivec2(gl_FragCoord.xy), 0);
+  if (l.r + l.g + l.b + l.a <= 0.0) discard;
+  vec4 c = vec4(0.0);
+  c = over(c, cprov, l.g); c = over(c, cloc, l.b); c = over(c, cbord, l.r); c = over(c, cline, l.a);
+  o = c;
+}`;
+    // grano del papel sobre todo el disco
+    const grainFS = H + `uniform sampler2D grain; uniform vec2 res; uniform float dpr; uniform vec3 view; uniform vec2 anc;
+out vec4 o;
+void main(){
+  vec2 px = vec2(gl_FragCoord.x, res.y - gl_FragCoord.y) / dpr;
+  float cov = clamp((view.z - length(px - view.xy)) * dpr + 0.5, 0.0, 1.0);
+  if (cov <= 0.0) discard;
+  o = vec4(mix(vec3(1.0), texture(grain, (px - anc) / 380.0).rgb, 0.32 * cov), 1.0);
+}`;
+    let P;
+    try { P = { line: prog(lineVS, lineFS), land: prog(triVS, landFS), wash: prog(triVS, washFS), water: prog(fullVS, waterFS), ink: prog(fullVS, inkFS), grain: prog(fullVS, grainFS) }; }
+    catch (e) { console.warn('Mapa en la tarjeta gráfica off:', e); return null; }
+    const fullVao = gl.createVertexArray(); gl.bindVertexArray(fullVao);
+    const fb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, fb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null);
+
+    // ---- geometría (una vez por mapa) ----
+    const u3 = (lon, lat, o) => { const l = lon * D2R, f = lat * D2R, c = Math.cos(f); o.push(c * Math.cos(l), c * Math.sin(l), Math.sin(f)); };
+    const elen = (a0, a1, b0, b1) => Math.hypot((b0 - a0) * Math.cos((a1 + b1) * D2R / 2), b1 - a1);
+    const TRI_MAX = 1.5, SEG_MAX = 1;
+    // triángulo en lon/lat → triángulos pequeños sobre la esfera; cada arista se parte siempre por el mismo sitio, así no quedan grietas entre vecinos
+    const subTri = (ax, ay, bx, by, cx, cy, out, depth) => {
+      const sab = elen(ax, ay, bx, by) > TRI_MAX, sbc = elen(bx, by, cx, cy) > TRI_MAX, sca = elen(cx, cy, ax, ay) > TRI_MAX;
+      if (depth > 10 || !(sab || sbc || sca)) { u3(ax, ay, out); u3(bx, by, out); u3(cx, cy, out); return; }
+      const d = depth + 1, mx = (ax + bx) / 2, my = (ay + by) / 2, nx = (bx + cx) / 2, ny = (by + cy) / 2, kx = (cx + ax) / 2, ky = (cy + ay) / 2;
+      if (sab && sbc && sca) { subTri(ax, ay, mx, my, kx, ky, out, d); subTri(mx, my, bx, by, nx, ny, out, d); subTri(kx, ky, nx, ny, cx, cy, out, d); subTri(mx, my, nx, ny, kx, ky, out, d); }
+      else if (sab && sbc) { subTri(mx, my, bx, by, nx, ny, out, d); subTri(ax, ay, mx, my, nx, ny, out, d); subTri(ax, ay, nx, ny, cx, cy, out, d); }
+      else if (sab && sca) { subTri(ax, ay, mx, my, kx, ky, out, d); subTri(mx, my, bx, by, cx, cy, out, d); subTri(mx, my, cx, cy, kx, ky, out, d); }
+      else if (sbc && sca) { subTri(cx, cy, kx, ky, nx, ny, out, d); subTri(kx, ky, ax, ay, bx, by, out, d); subTri(kx, ky, bx, by, nx, ny, out, d); }
+      else if (sab) { subTri(ax, ay, mx, my, cx, cy, out, d); subTri(mx, my, bx, by, cx, cy, out, d); }
+      else if (sbc) { subTri(ax, ay, bx, by, nx, ny, out, d); subTri(ax, ay, nx, ny, cx, cy, out, d); }
+      else { subTri(ax, ay, bx, by, kx, ky, out, d); subTri(kx, ky, bx, by, cx, cy, out, d); }
+    };
+    // polígono (con huecos) → triángulos; las longitudes se desenrollan para que nada salte de -180 a 180, y un anillo que rodea un polo se cierra por el polo
+    const triPoly = (rings, out) => {
+      const flat = [], holes = []; let ref = null;
+      rings.forEach((ring, ri) => {
+        let n = ring.length;
+        if (n > 1 && ring[0][0] === ring[n - 1][0] && ring[0][1] === ring[n - 1][1]) n--;
+        if (n < 3) return;
+        if (ri) holes.push(flat.length / 2);
+        const start = flat.length; let prev = null, sl = 0;
+        for (let i = 0; i < n; i++) {
+          let lon = ring[i][0]; const lat = ring[i][1], base = prev === null ? ref : prev;
+          if (base !== null) { while (lon - base > 180) lon -= 360; while (lon - base < -180) lon += 360; }
+          if (ref === null) ref = lon;
+          prev = lon; sl += lat; flat.push(lon, lat);
+        }
+        const dl = flat[flat.length - 2] - flat[start];
+        if (Math.abs(dl) > 180) { const pole = sl > 0 ? 90 : -90; flat.push(flat[flat.length - 2], pole, flat[start], pole); }
+      });
+      if (flat.length < 6) return;
+      const idx = earcut(flat, holes.length ? holes : null, 2);
+      for (let i = 0; i < idx.length; i += 3) { const a = idx[i] * 2, b = idx[i + 1] * 2, c = idx[i + 2] * 2; subTri(flat[a], flat[a + 1], flat[b], flat[b + 1], flat[c], flat[c + 1], out, 0); }
+    };
+    const triGeom = (g, out) => { if (!g) return; if (g.type === 'Polygon') triPoly(g.coordinates, out); else if (g.type === 'MultiPolygon') for (const pl of g.coordinates) triPoly(pl, out); };
+    // línea → tramos cortos sobre la esfera, cada uno con la distancia recorrida (los guiones quedan fijos al mapa)
+    const addLine = (pts, out) => {
+      if (!pts || pts.length < 2) return;
+      let px = pts[0][0], py = pts[0][1], d = 0, pu = []; u3(px, py, pu);
+      for (let i = 1; i < pts.length; i++) {
+        let x = pts[i][0]; const y = pts[i][1];
+        while (x - px > 180) x -= 360; while (x - px < -180) x += 360;
+        const m = Math.max(1, Math.ceil(elen(px, py, x, y) / SEG_MAX));
+        for (let t = 1; t <= m; t++) {
+          const q = []; u3(px + (x - px) * t / m, py + (y - py) * t / m, q);
+          const w = 2 * Math.asin(Math.min(1, Math.hypot(q[0] - pu[0], q[1] - pu[1], q[2] - pu[2]) / 2));
+          out.push(pu[0], pu[1], pu[2], q[0], q[1], q[2], d, d + w); d += w; pu = q;
+        }
+        px = x; py = y;
+      }
+    };
+    const ringsOf = (g, fn) => { if (!g) return; if (g.type === 'Polygon') g.coordinates.forEach(fn); else if (g.type === 'MultiPolygon') for (const pl of g.coordinates) pl.forEach(fn); };
+    const lineVao = (arr) => {
+      const vao = gl.createVertexArray(), buf = gl.createBuffer();
+      gl.bindVertexArray(vao); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(arr), gl.STATIC_DRAW);
+      for (const [i, n, off] of [[0, 3, 0], [1, 3, 12], [2, 2, 24]]) { gl.enableVertexAttribArray(i); gl.vertexAttribPointer(i, n, gl.FLOAT, false, 32, off); gl.vertexAttribDivisor(i, 1); }
+      gl.bindVertexArray(null);
+      return { vao, buf, n: arr.length / 8 };
+    };
+    const triVao = (pos, wts) => {
+      const vao = gl.createVertexArray(), buf = gl.createBuffer();
+      gl.bindVertexArray(vao); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+      let wb = null;
+      if (wts) { wb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, wb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(wts), gl.STATIC_DRAW); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 0, 0); }
+      gl.bindVertexArray(null);
+      return { vao, buf, wb, n: pos.length / 3 };
+    };
+    const drop = (x) => { if (!x) return; gl.deleteVertexArray(x.vao); gl.deleteBuffer(x.buf); if (x.wb) gl.deleteBuffer(x.wb); };
+    // cuadrícula cada 10° (como d3.geoGraticule10)
+    const grat = (() => {
+      const out = [];
+      for (let lon = -180; lon < 180; lon += 10) { const ext = lon % 90 === 0 ? 90 : 80, pts = []; for (let lat = -ext; lat <= ext; lat += 1) pts.push([lon, lat]); addLine(pts, out); }
+      for (let lat = -80; lat <= 80; lat += 10) { const pts = []; for (let lon = -180; lon <= 180; lon += 1) pts.push([lon, lat]); addLine(pts, out); }
+      return lineVao(out);
+    })();
+    // se prepara a trozos (unos milisegundos por vez) para no frenar la página mientras carga
+    const jobs = new WeakMap();
+    const prepare = (set) => {
+      if (!set || jobs.has(set)) return;
+      const job = { ready: false }; jobs.set(set, job);
+      const land = [], coast = [], border = [], prov = [], tasks = [];
+      for (const f of set.parts) tasks.push(() => triGeom(f.geometry, land));
+      for (const f of set.coast) tasks.push(() => addLine(f.geometry.coordinates, coast));
+      for (const f of set.border) tasks.push(() => addLine(f.geometry.coordinates, border));
+      for (const a of set.parcs || []) tasks.push(() => addLine(a, prov));
+      let i = 0;
+      const run = () => {
+        const t0 = performance.now();
+        while (i < tasks.length && performance.now() - t0 < 6) tasks[i++]();
+        if (i < tasks.length) { setTimeout(run, 0); return; }
+        Object.assign(job, { land: triVao(land, null), coast: lineVao(coast), border: lineVao(border), prov: lineVao(prov), ready: true });
+        schedule();
+      };
+      setTimeout(run, 0);
+    };
+    // lugares pintados (cambian solo cuando cambian los streamers)
+    let wash = null;
+    const setWash = (set, people) => {
+      const key = people.map((p) => p.country_code + '/' + p.province_id + '/' + (hasLocality(p) ? p.twitch : '')).join(',');
+      if (wash && wash.set === set && wash.key === key) return;
+      const full = new Set(), half = new Set(), locs = [], cFull = new Set(), cHalf = new Set();
+      for (const p of people) {
+        const g = regionsOf(p, set);
+        if (g.loc) locs.push(g.loc);
+        if (g.prov) (g.loc ? half : full).add(g.prov);
+        else (g.loc ? cHalf : cFull).add(p.country_code);
+      }
+      for (const id of full) half.delete(id);
+      for (const id of cFull) cHalf.delete(id);
+      const A = 0.6, pos = [], wts = [], ln = [];
+      const add = (f, a) => { if (!f) return; const n0 = pos.length; triGeom(f.geometry, pos); for (let i = n0; i < pos.length; i += 3) wts.push(a); };
+      for (const c of cFull) add(set.byCode.get(c), A);
+      for (const c of cHalf) add(set.byCode.get(c), A / 2);
+      for (const id of full) add(set.provById.get(id), A);
+      for (const id of half) add(set.provById.get(id), A / 2);
+      for (const f of locs) { add(f, A); ringsOf(f.geometry, (r) => addLine(r, ln)); }
+      if (wash) { drop(wash.tri); drop(wash.loc); }
+      wash = { set, key, tri: triVao(pos, wts), loc: lineVao(ln) };
+    };
+
+    // ---- capas de trabajo del tamaño de la pantalla ----
+    const samples = Math.min(4, gl.getParameter(gl.MAX_SAMPLES) || 0);
+    let tw = 0, th = 0;
+    const L = [0, 1].map(() => ({ t: gl.createTexture(), f: gl.createFramebuffer() }));
+    const ms = { r: gl.createRenderbuffer(), f: gl.createFramebuffer() };
+    const fit = (w, h) => {
+      if (w === tw && h === th) return;
+      tw = w; th = h;
+      for (const x of L) {
+        gl.bindTexture(gl.TEXTURE_2D, x.t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, x.f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, x.t, 0);
+      }
+      gl.bindRenderbuffer(gl.RENDERBUFFER, ms.r);
+      if (samples > 1) gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, gl.RGBA8, w, h); else gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA8, w, h);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, ms.f); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, ms.r);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    };
+    const rgba = (c) => { const x = d3.color(c) || d3.rgb(0, 0, 0); const r = x.rgb(); return [r.r / 255, r.g / 255, r.b / 255, Number.isFinite(r.opacity) ? r.opacity : 1]; };
+    let cc = null, ccKey = null;
+
+    const render = (o) => {
+      const job = jobs.get(o.set);
+      if (!job || !job.ready) return false;
+      setWash(o.set, o.people);
+      const ck = Object.values(colors).join();
+      if (ccKey !== ck) { ccKey = ck; cc = {}; for (const k of Object.keys(colors)) cc[k] = rgba(colors[k]); }
+      const w = glCanvas.width, h = glCanvas.height, dpr = w / o.W, s = o.sphereR * dpr;
+      fit(w, h);
+      const l = o.rot[0] * D2R, f = o.rot[1] * D2R, cl = Math.cos(l), sl = Math.sin(l), cf = Math.cos(f), sf = Math.sin(f);
+      // filas: profundidad, x y y de pantalla (la misma cuenta que la proyección ortográfica de d3)
+      const M = new Float32Array([cf * cl, sl, sf * cl, -cf * sl, cl, -sf * sl, -sf, 0, cf]);
+      const view = [w / 2, h / 2, s];
+      gl.viewport(0, 0, w, h);
+      gl.enable(gl.BLEND);
+      // 1) coberturas de las líneas (máximo por píxel)
+      const lp = P.line; gl.useProgram(lp.p);
+      gl.uniformMatrix3fv(lp.u.M, false, M); gl.uniform3f(lp.u.view, ...view); gl.uniform2f(lp.u.res, w, h);
+      gl.blendEquation(gl.MAX); gl.blendFunc(gl.ONE, gl.ONE);
+      const lines = (x, hw4, on, per) => {
+        if (!x || !x.n) return;
+        gl.uniform4f(lp.u.hw4, ...hw4.map((v) => v * dpr)); gl.uniform1f(lp.u.hw, Math.max(...hw4) * dpr + 1.5);
+        gl.uniform3f(lp.u.dash, on * dpr, per * dpr, s);
+        gl.bindVertexArray(x.vao); gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, x.n);
+      };
+      gl.bindFramebuffer(gl.FRAMEBUFFER, L[0].f); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+      lines(job.coast, [9, 4, 11, 0], 0, 0);
+      if (o.k < 6) lines(grat, [0, 0, 0, 0.3], 5, 9);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, L[1].f); gl.clear(gl.COLOR_BUFFER_BIT);
+      lines(job.prov, [0, 0.4, 0, 0], 2, 5);
+      lines(wash.loc, [0, 0, 0.7, 0], 0, 0);
+      lines(job.border, [0.7, 0, 0, 0], 6, 10);
+      lines(job.coast, [0, 0, 0, 0.9], 0, 0);
+      gl.blendEquation(gl.FUNC_ADD);
+      // 2) el mapa, con bordes suavizados (multimuestreo)
+      gl.bindFramebuffer(gl.FRAMEBUFFER, ms.f); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, GL.gtex);
+      gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, L[0].t);
+      gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, L[1].t);
+      const css = [o.W / 2, o.H / 2, o.sphereR];
+      gl.disable(gl.BLEND);
+      const wp = P.water; gl.useProgram(wp.p);
+      gl.uniform1i(wp.u.grain, 2); gl.uniform1i(wp.u.L1, 4); gl.uniform2f(wp.u.res, w, h); gl.uniform1f(wp.u.dpr, dpr); gl.uniform3f(wp.u.view, ...css); gl.uniform2f(wp.u.anc, ...o.anc);
+      gl.uniform3f(wp.u.ca, ...cc.a.slice(0, 3)); gl.uniform3f(wp.u.cb, ...cc.b.slice(0, 3)); gl.uniform4f(wp.u.grid, ...cc.grid); gl.uniform4f(wp.u.ripple, ...cc.ripple);
+      gl.bindVertexArray(fullVao); gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      const tp = P.land; gl.useProgram(tp.p);
+      gl.uniformMatrix3fv(tp.u.M, false, M); gl.uniform3f(tp.u.view, ...view); gl.uniform2f(tp.u.res, w, h);
+      gl.uniform1i(tp.u.grain, 2); gl.uniform1i(tp.u.L1, 4); gl.uniform1f(tp.u.dpr, dpr); gl.uniform2f(tp.u.anc, ...o.anc);
+      gl.uniform3f(tp.u.land, ...cc.land.slice(0, 3)); gl.uniform4f(tp.u.edge, ...cc.edge);
+      gl.bindVertexArray(job.land.vao); gl.vertexAttrib1f(1, 0); gl.drawArrays(gl.TRIANGLES, 0, job.land.n);
+      if (wash.tri.n) {
+        gl.blendFuncSeparate(gl.DST_COLOR, gl.ZERO, gl.ZERO, gl.ONE);
+        const ap = P.wash; gl.useProgram(ap.p);
+        gl.uniformMatrix3fv(ap.u.M, false, M); gl.uniform3f(ap.u.view, ...view); gl.uniform2f(ap.u.res, w, h); gl.uniform3f(ap.u.hi, ...cc.hi.slice(0, 3));
+        gl.bindVertexArray(wash.tri.vao); gl.drawArrays(gl.TRIANGLES, 0, wash.tri.n);
+      }
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      const ip = P.ink; gl.useProgram(ip.p);
+      gl.uniform1i(ip.u.L2, 5); gl.uniform4f(ip.u.cprov, ...cc.prov); gl.uniform4f(ip.u.cloc, ...cc.hi); gl.uniform4f(ip.u.cbord, ...cc.border); gl.uniform4f(ip.u.cline, ...cc.line);
+      gl.bindVertexArray(fullVao); gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.blendFuncSeparate(gl.DST_COLOR, gl.ZERO, gl.ZERO, gl.ONE);
+      const gp = P.grain; gl.useProgram(gp.p);
+      gl.uniform1i(gp.u.grain, 2); gl.uniform2f(gp.u.res, w, h); gl.uniform1f(gp.u.dpr, dpr); gl.uniform3f(gp.u.view, ...css); gl.uniform2f(gp.u.anc, ...o.anc);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      // 3) a la pantalla
+      gl.disable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ZERO); gl.bindVertexArray(null);
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, ms.f); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+      gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.activeTexture(gl.TEXTURE0);
+      return true;
+    };
+    return { prepare, ready: (set) => !!set && !!(jobs.get(set) || {}).ready, render };
   })();
   let texDirty = true, texKey = '';
   const ensureTexture = () => {
@@ -934,7 +1272,10 @@ void main(){
       GL.snapBand(bandCanvas, y, h);
       if (++b.i * b.bh >= b.ch) { GL.snapSwap(b.info); build = null; if (buildOnly) schedule(); }
     };
-    const canSnap = GL && GL.canSnap() && !useGL && S.k >= vectorFrom();
+    // de cerca, el mapa entero lo dibuja la tarjeta gráfica (si ya está preparado; mientras tanto, el camino de siempre)
+    if (VG) { VG.prepare(G.lo); VG.prepare(G.hi); }
+    const vgSet = VG && provMode && !useGL ? (VG.ready(G.hi) ? G.hi : VG.ready(G.lo) ? G.lo : null) : null;
+    const canSnap = GL && GL.canSnap() && !useGL && !vgSet && S.k >= vectorFrom();
     // en reposo la foto se rehace (a franjas, sin prisa) exactamente en la vista actual: entonces se ve igual que pintada directa
     if (buildOnly) {
       if (!canSnap || moving || still(GL.snap())) { build = null; return; }
@@ -945,6 +1286,11 @@ void main(){
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
     if (useGL) {
       GL.render();
+    } else if (vgSet) {
+      if (GL.snap()) GL.dropSnap();
+      build = null;
+      const pa = projection(paper.g);
+      VG.render({ set: vgSet, people, W, H, sphereR, rot: S.rot, k: S.k, anc: [pa[0] + paper.sx, pa[1] + paper.sy] });
     } else if (canSnap) {
       // de cerca la pantalla muestra la foto recolocada: pintar el mapa entero directo en pantalla es lo que más cuesta
       // si la foto ya no sirve (zoom brusco), se pinta la pantalla directamente y la nueva se prepara por franjas
@@ -1085,6 +1431,8 @@ void main(){
           S.rot = [S.rot[0] + (lon1 - S.rot[0]) * f, S.rot[1] + (-p.lat - S.rot[1]) * f];
         }
       }
+      // con la ventana a tamaño cero (pestaña oculta) el zoom puede dar un valor roto: se ignora y se deja el último bueno
+      if (!Number.isFinite(t.k) || !Number.isFinite(t.x) || !Number.isFinite(t.y)) { sel.property('__zoom', d3.zoomIdentity.scale(S.k)); return; }
       lastT = t; S.k = t.k; schedule();
     });
   const sel = d3.select(canvas).call(zoom).on('dblclick.zoom', null);
