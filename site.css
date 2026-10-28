@@ -200,8 +200,8 @@ body.preview .back { display: inline-flex; }
 .labels { z-index: 2; }
 .pin-dot { left: -6px; top: -6px; width: 12px; height: 12px; background: var(--pin); border: 2px solid var(--pin-ring); box-shadow: 0 1px 3px rgba(0, 0, 0, .5); }
 .pin-stem { background: var(--pin); width: 2px; }
-.pill, .card { background: var(--label-bg); color: var(--label-fg); border: 1px solid var(--label-line); box-shadow: 0 6px 18px rgba(30, 15, 5, .45), inset 0 0 0 2px rgba(255, 245, 220, .5); }
-.pill { border-radius: 8px; padding: 4px 8px 4px 4px; }
+.pill, .card { background: var(--label-bg); color: var(--label-fg); border: .5px solid var(--label-line); box-shadow: 0 6px 18px rgba(30, 15, 5, .45); }
+.pill { border-radius: 8px; padding: 1.5px 6px 1.5px 1.5px; }
 .pill:hover { border-color: var(--accent); }
 .pill .av { border-radius: 6px; border: 1px solid var(--label-line); background: #7b1e2b; color: #fbf1e2; }
 .pill-txt a { color: var(--label-fg); font-family: var(--font-display); font-size: 13px; letter-spacing: .02em; }
@@ -274,14 +274,14 @@ body.preview .back { display: inline-flex; }
 .stems { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
 .stems .pin-stem { left: 0; top: 0; bottom: auto; will-change: transform; }
 .labels.mini .pill-txt, .labels.mini .pill-more { display: none; }
-.labels.mini .pill { padding: 3px; gap: 0; }
+.labels.mini .pill { padding: 1px; gap: 0; }
 .labels.mini .pill-live { left: 0 !important; top: 0 !important; }
 /* medio zoom en la vista países: foto pequeña y nombre (sin lugar ni flecha) */
 .labels.semi .pill-loc, .labels.semi .pill-more { display: none; }
-.labels.semi .pill { padding: 3px 9px 3px 3px; gap: 6px; }
+.labels.semi .pill { padding: 1px 7px 1px 1px; gap: 6px; }
 .labels.semi .pill .av { width: 24px; height: 24px; font-size: 11px; }
 .labels.semi .pill-live { left: 1px !important; top: 1px !important; width: 9px !important; height: 9px !important; }
 .pin.solo .pill-txt, .pin.solo .pill-more { display: none; }
-.pin.solo .pill { padding: 3px; gap: 0; }
+.pin.solo .pill { padding: 1px; gap: 0; }
 .pin.solo .pill-live { left: 0 !important; top: 0 !important; }
 .labels .pill { will-change: translate; } /* cada pastilla en su capa: al deslizarse no se repinta nada */

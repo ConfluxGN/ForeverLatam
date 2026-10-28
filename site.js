@@ -25,6 +25,9 @@
     } catch { return ''; }
   };
   const twitchUrl = (login) => 'https://www.twitch.tv/' + encodeURIComponent(String(login).trim().toLowerCase());
+  // quien solo emite en Kick lleva platform: 'kick' (su id sigue en el campo twitch); su canal y su botón van a Kick
+  const isKick = (p) => p.platform === 'kick';
+  const channelUrl = (p) => isKick(p) ? 'https://kick.com/' + encodeURIComponent(String(p.twitch).trim().toLowerCase()) : twitchUrl(p.twitch);
   const nowIso = () => new Date().toISOString();
 
   // ---------- state ----------
@@ -1575,12 +1578,12 @@ void main(){
       const d = await r.json();
       if (Date.now() - Date.parse(d.t) > 20 * 60000) throw 0; // dato caducado: mejor no mostrar nada que mostrar algo falso
       const on = new Set(d.live);
-      for (const p of live()) { LIVE.set(p.twitch, on.has(p.twitch)); paintLive(p.twitch); }
+      for (const p of live()) { if (isKick(p)) continue; LIVE.set(p.twitch, on.has(p.twitch)); paintLive(p.twitch); }
       saveLive();
     } catch { for (const p of live()) { LIVE.delete(p.twitch); paintLive(p.twitch); } } finally { polling = false; }
   };
   let polling = false, lastPoll = 0;
-  const needLive = () => { if (Date.now() - lastPoll > 20000 && live().some((p) => !LIVE.has(p.twitch))) pollLive(); };
+  const needLive = () => { if (Date.now() - lastPoll > 20000 && live().some((p) => !isKick(p) && !LIVE.has(p.twitch))) pollLive(); };
   setInterval(pollLive, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); });
 
@@ -1683,7 +1686,7 @@ void main(){
     close.addEventListener('click', (e) => { e.stopPropagation(); closeCard(); });
     const head = el('div', 'card-head');
     const who = el('div');
-    const a = el('a', 'card-name', p.name || p.twitch); a.href = twitchUrl(p.twitch); a.target = '_blank'; a.rel = 'noopener noreferrer';
+    const a = el('a', 'card-name', p.name || p.twitch); a.href = channelUrl(p); a.target = '_blank'; a.rel = 'noopener noreferrer';
     const lt = el('span', 'card-live');
     who.append(a, el('div', 'card-login', '@' + p.twitch), lt);
     head.append(avatar(p), who);
@@ -1698,7 +1701,7 @@ void main(){
     const clock = el('div', 'clock'); clock.dataset.tz = tz;
     clock.append(document.createTextNode(timeIn(tz, true)), el('small', null, offsetOf(tz)));
     add('Hora local', clock);
-    const liveA = el('a', 'live', 'Ver directo en Twitch'); liveA.href = twitchUrl(p.twitch); liveA.target = '_blank'; liveA.rel = 'noopener noreferrer';
+    const liveA = el('a', 'live', isKick(p) ? 'Ver directo en Kick' : 'Ver directo en Twitch'); liveA.href = channelUrl(p); liveA.target = '_blank'; liveA.rel = 'noopener noreferrer';
     card.append(close, head, dl, liveA);
     const soc = p.socials && typeof p.socials === 'object' ? SOCIALS.map(([k, label]) => [k, label, socialUrl(k, p.socials[k])]).filter((x) => x[2]) : [];
     if (soc.length) {
