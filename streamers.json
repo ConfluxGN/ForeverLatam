@@ -133,6 +133,23 @@
   "age": 30
  },
  {
+  "twitch": "crolo",
+  "name": "crolo",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/20171d98-8bbb-4d43-b387-388b43e9b464-profile_image-300x300.jpeg",
+  "socials": {},
+  "lat": 6.1551,
+  "lon": -75.3737,
+  "country": "Colombia",
+  "country_code": "COL",
+  "country_iso2": "CO",
+  "province": "Antioquia",
+  "province_id": "p1885",
+  "city": "Rionegro",
+  "nationality": "CO",
+  "tz": "America/Bogota",
+  "age": 29
+ },
+ {
   "twitch": "d4go0",
   "name": "D4GO0",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/b4e7e396-1474-4e20-9970-119d24daea43-profile_image-300x300.png",
