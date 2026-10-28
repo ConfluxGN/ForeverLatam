@@ -511,6 +511,24 @@
   "tz": "America/Bogota"
  },
  {
+  "twitch": "loneclover_",
+  "name": "Pansy",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/30b11369-b56b-4563-b3ec-5dec2b0406f7-profile_image-300x300.png",
+  "socials": {
+   "tiktok": "https://www.tiktok.com/@_loneclover"
+  },
+  "lat": -36.827,
+  "lon": -73.0498,
+  "country": "Chile",
+  "country_code": "CHL",
+  "country_iso2": "CL",
+  "province": "Bío-Bío",
+  "province_id": "p1330",
+  "city": "Concepción",
+  "nationality": "",
+  "tz": "America/Santiago"
+ },
+ {
   "twitch": "majutank",
   "name": "majutank",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/4b1e2e03-3dcf-4a19-a5ac-00c6cb143b9f-profile_image-300x300.jpeg",
