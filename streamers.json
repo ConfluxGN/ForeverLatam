@@ -683,6 +683,23 @@
   "age": 31
  },
  {
+  "twitch": "vampiraffe",
+  "name": "vampiraffe",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/0b414884-6f33-45d8-8f0e-e8363edb1140-profile_image-300x300.png",
+  "socials": {},
+  "lat": -38.4161,
+  "lon": -63.6167,
+  "country": "Argentina",
+  "country_code": "ARG",
+  "country_iso2": "AR",
+  "province": "",
+  "province_id": "",
+  "city": "",
+  "nationality": "VE",
+  "tz": "America/Argentina/Buenos_Aires",
+  "age": 29
+ },
+ {
   "twitch": "wallsides",
   "name": "Wally",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/4529bdf1-2409-4739-8ef3-b85e3d303a63-profile_image-300x300.png",
