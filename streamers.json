@@ -241,6 +241,23 @@
   "age": 29
  },
  {
+  "twitch": "elviejointi",
+  "name": "elviejointi",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/fa67b4b6-e099-4ac6-8236-6869a92fb83c-profile_image-300x300.png",
+  "socials": {},
+  "lat": -36.6769,
+  "lon": -60.5588,
+  "country": "Argentina",
+  "country_code": "ARG",
+  "country_iso2": "AR",
+  "province": "Buenos Aires",
+  "province_id": "p1725",
+  "city": "",
+  "nationality": "AR",
+  "tz": "America/Argentina/Buenos_Aires",
+  "age": 40
+ },
+ {
   "twitch": "friiigg",
   "name": "Frigg",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/18f0a8d6-9cc9-4f0b-a717-5f584ee02832-profile_image-300x300.png",
@@ -315,6 +332,26 @@
   "nationality": "VE",
   "tz": "Europe/Lisbon",
   "age": 33
+ },
+ {
+  "twitch": "kariietv",
+  "name": "Kariie",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/fccc5b80-1abb-4801-83ce-2db9003b6f96-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/kariietv",
+   "tiktok": "https://www.tiktok.com/@kariietv"
+  },
+  "lat": 31.6904,
+  "lon": -106.4245,
+  "country": "México",
+  "country_code": "MEX",
+  "country_iso2": "MX",
+  "province": "Chihuahua",
+  "province_id": "p1259",
+  "city": "Ciudad Juárez",
+  "nationality": "MX",
+  "tz": "America/Ciudad_Juarez",
+  "age": 34
  },
  {
   "twitch": "kearo",
@@ -455,6 +492,27 @@
   "city": "",
   "nationality": "ES",
   "tz": "America/Argentina/Buenos_Aires"
+ },
+ {
+  "twitch": "sachggs",
+  "name": "Sach",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/1b4cee74-3fb0-42e5-bc85-cbd80ea23b7d-profile_image-300x300.jpeg",
+  "socials": {
+   "instagram": "https://www.instagram.com/sachggs",
+   "youtube": "https://www.youtube.com/@SachGGs",
+   "tiktok": "https://www.tiktok.com/@sach.ggs"
+  },
+  "lat": 5.5353,
+  "lon": -73.3678,
+  "country": "Colombia",
+  "country_code": "COL",
+  "country_iso2": "CO",
+  "province": "Boyacá",
+  "province_id": "p1346",
+  "city": "Tunja",
+  "nationality": "CO",
+  "tz": "America/Bogota",
+  "age": 30
  },
  {
   "twitch": "shiryuu5",
