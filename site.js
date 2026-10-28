@@ -1608,7 +1608,7 @@ void main(){
   const buildPins = () => {
     pins.clear(); labels.replaceChildren(); stemsEl.replaceChildren();
     live().forEach((p, i) => {
-      const pin = el('div', 'pin'); pin.dataset.login = p.twitch; { const v = LIVE.get(p.twitch); if (v === true) pin.classList.add('is-live'); else if (v === false) pin.classList.add('is-off'); }
+      const pin = el('div', 'pin'); pin.dataset.login = p.twitch; { const v = isKick(p) ? undefined : LIVE.get(p.twitch); if (v === true) pin.classList.add('is-live'); else if (v === false) pin.classList.add('is-off'); }
       const fl = el('div', 'pin-float bob'); fl.style.animationDelay = (i % 7) * 0.45 + 's';
       const stem = el('div', 'pin-stem'); stemsEl.append(stem);
       if (S.open === p.twitch) { pin.classList.add('open'); fl.append(buildCard(p)); fl.classList.remove('bob'); }
