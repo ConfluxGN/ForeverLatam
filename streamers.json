@@ -627,6 +627,26 @@
   "tz": "America/Santo_Domingo"
  },
  {
+  "twitch": "winterlyst",
+  "name": "W",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/729da50b-cf69-494d-8c97-c768d2d4e5bb-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/winterlyst_",
+   "youtube": "https://www.youtube.com/@Winterlyst"
+  },
+  "lat": 7.1193,
+  "lon": -73.1227,
+  "country": "Colombia",
+  "country_code": "COL",
+  "country_iso2": "CO",
+  "province": "Santander",
+  "province_id": "p3782",
+  "city": "Bucaramanga",
+  "nationality": "CO",
+  "tz": "America/Bogota",
+  "age": 26
+ },
+ {
   "twitch": "xureshix",
   "name": "Ureshi",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/d947bde5-240d-4156-81b8-2485d6e98d08-profile_image-300x300.png",
