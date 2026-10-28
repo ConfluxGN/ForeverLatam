@@ -16,6 +16,25 @@
   "tz": "America/Bogota"
  },
  {
+  "twitch": "billyjimi",
+  "name": "Billy",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/7e7bd76c-9f03-4b8f-a852-8c5b19f5596d-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/suntipsbillie"
+  },
+  "lat": -2.171,
+  "lon": -79.9224,
+  "country": "Ecuador",
+  "country_code": "ECU",
+  "country_iso2": "EC",
+  "province": "Guayas",
+  "province_id": "p1789",
+  "city": "Guayaquil",
+  "nationality": "EC",
+  "tz": "America/Guayaquil",
+  "age": 33
+ },
+ {
   "twitch": "chivopesado",
   "name": "Chivopesado",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/043bbd1e-13d7-4161-8fe8-cbd08fdb69cd-profile_image-300x300.png",
