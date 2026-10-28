@@ -276,3 +276,12 @@ body.preview .back { display: inline-flex; }
 .labels.mini .pill-txt, .labels.mini .pill-more { display: none; }
 .labels.mini .pill { padding: 3px; gap: 0; }
 .labels.mini .pill-live { left: 0 !important; top: 0 !important; }
+/* medio zoom en la vista países: foto pequeña y nombre (sin lugar ni flecha) */
+.labels.semi .pill-loc, .labels.semi .pill-more { display: none; }
+.labels.semi .pill { padding: 3px 9px 3px 3px; gap: 6px; }
+.labels.semi .pill .av { width: 24px; height: 24px; font-size: 11px; }
+.labels.semi .pill-live { left: 1px !important; top: 1px !important; width: 9px !important; height: 9px !important; }
+.pin.solo .pill-txt, .pin.solo .pill-more { display: none; }
+.pin.solo .pill { padding: 3px; gap: 0; }
+.pin.solo .pill-live { left: 0 !important; top: 0 !important; }
+.labels .pill { will-change: translate; } /* cada pastilla en su capa: al deslizarse no se repinta nada */
