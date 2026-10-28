@@ -1345,67 +1345,167 @@ void main(){
     }
     order.sort((a, b) => a[0] - b[0]);
     for (let i = 0; i < order.length; i++) { const e = order[i][1], z = 10 + i; if (e._st.z !== z) { e._st.z = z; e.style.zIndex = String(z); } }
-    // lejos: solo la foto de perfil (con un poco de margen para que no parpadee al cruzar el umbral)
+    // tres tamaños de pastilla: lejos solo la foto; a medio zoom (vista países) foto y nombre; de cerca, completa
+    // (con margen en cada umbral para que no parpadee al cruzarlo)
     const mini = S.mini = S.mini ? S.k < 1.05 : S.k < 0.95;
+    const semi = S.semi = !mini && !provMode && (S.semi ? S.k < 2.1 : S.k < 1.9);
     if (labels._mini !== mini) { labels._mini = mini; labels.classList.toggle('mini', mini); }
-    // las pastillas que se tapan se reparten: primero lo más cerca de su sitio (arriba, en diagonal o a un lado); el palito sigue unido a la ubicación real
-    const PW = mini ? 42 : 165, PH = mini ? 42 : 42, STEP = mini ? 44 : 44;
-    const offs = (S._offs || (S._offs = {}))[mini ? 1 : 0] || ((S._offs[mini ? 1 : 0]) = (() => {
-      const o = [];
-      // coste = distancia al punto; subir recto es lo más barato y inclinar el palito cuesta un extra, así que solo se va a los lados si arriba no cabe
-      for (const ox of mini ? [0, 22, -22, 44, -44, 66, -66, 88, -88] : [0, 45, -45, 90, -90, 135, -135, 173, -173, 225, -225, 280, -280]) for (let r = 0; r <= 16; r++) o.push([ox, r * 22, r * 22 + Math.abs(ox) * 0.6 + (ox ? 30 : 0)]);
-      return o.sort((p, q) => p[2] - q[2]);
-    })());
-    // los palitos no deben cruzarse entre sí ni atravesar otras pastillas: gana el sitio más barato: cerca de su punto, el palito recto hacia arriba si cabe y, sobre todo, sin cruces
-    const sx = (ax, ay, bx, by, cx, cy, dx, dy) => { const o = (px, py, qx, qy, rx, ry) => (qx - px) * (ry - py) - (qy - py) * (rx - px); return (o(ax, ay, bx, by, cx, cy) > 0) !== (o(ax, ay, bx, by, dx, dy) > 0) && (o(cx, cy, dx, dy, ax, ay) > 0) !== (o(cx, cy, dx, dy, bx, by) > 0); };
-    const HW = PW / 2;
-    const inPill = (ax, ay, bx, by, cx, cy) => { for (let t = 0.2; t <= 1.001; t += 0.2) { const px = ax + (bx - ax) * t, py = ay + (by - ay) * t; if (Math.abs(px - cx) < HW && py > cy - 67 && py < cy - 27) return true; } return false; };
-    // al girar o hacer zoom el reparto casi no cambia: se recalcula como mucho cada 90 ms (o cuando cambia qué pastillas se ven); entre medias solo se mueven los palitos
-    const nowT = performance.now(), sig = order.length + (mini ? 'm' : 'f');
-    const reuse = S._sig === sig && nowT - (S._placeT || 0) < 90;
-    if (!reuse) { S._sig = sig; S._placeT = nowT; }
-    const placed = [];
-    for (let j = order.length - 1; j >= 0; j--) {
-      const [y, e, x, depth] = order[j];
-      // la pastilla nunca se sale de la pantalla, salvo si su punto ya está en el borde de la Tierra a punto de desaparecer o fuera de la pantalla
-      const edge = depth < 0.2 || x < 0 || x > W || y < 0 || y > H, inX = (v) => edge ? v : Math.min(W - 4 - HW, Math.max(4 + HW, v));
-      let ox = 0, lift = 0;
-      if (reuse) { ox = e._st.ox || 0; lift = e._st.oy || 0; }
-      else if (!e.classList.contains('open')) {
-        let best = null, bestS = 1e9;
-        for (const o of offs) {
-          if (o[2] >= bestS) break;
-          const cx = inX(x + o[0]), cy = y - o[1]; let hit = false, cr = 0;
-          if (!edge && o[1] && cy - 67 < 4) continue;
-          for (const q of placed) {
-            if (Math.abs(q.cx - cx) < PW && Math.abs(q.cy - cy) < PH) { hit = true; break; }
-            // si ni las cajas de los dos palitos ni las pastillas se acercan, no hay nada que comprobar (ahorra casi todo el cálculo)
-            if (Math.max(x, cx) + HW < Math.min(q.x, q.cx) - HW || Math.min(x, cx) - HW > Math.max(q.x, q.cx) + HW || cy - 70 > q.y || q.cy - 70 > y) continue;
-            if (sx(x, y, cx, cy - 27, q.x, q.y, q.cx, q.cy - 27)) cr += 150; else if (inPill(x, y, cx, cy - 27, q.cx, q.cy) || inPill(q.x, q.y, q.cx, q.cy - 27, cx, cy)) cr += 15;
-          }
-          if (hit) continue;
-          const s = o[2] + cr;
-          if (s < bestS) { bestS = s; best = [cx - x, o[1]]; }
-        }
-        best = best || [inX(x) - x, 0];
-        ox = best[0]; lift = best[1];
-      }
-      e._st.ox = ox; e._st.oy = lift;
-      const key = ox + ',' + lift;
-      if (e._st.lift !== key) {
-        e._st.lift = key; e._st.stemT = null;
-        const pl = e._pill || (e._pill = e.querySelector('.pill'));
-        if (pl) pl.style.translate = ox || lift ? ox + 'px ' + (-lift) + 'px' : '';
-      }
-      if (e._st.stemT === null || e._st.stemT === undefined) {
-        // el palito vive en su propia capa debajo de todas las pastillas: así nunca se pinta encima de otra
-        e._st.stemT = 1;
-        e._stem.style.transform = 'translate(' + (e._st.tx - 1).toFixed(2) + 'px, ' + (e._st.ty - 28).toFixed(2) + 'px)' + (ox || lift ? ' rotate(' + Math.atan2(ox, 24 + lift) + 'rad) scaleY(' + (Math.hypot(ox, 24 + lift) / 24) + ')' : '');
-      }
-      if (!reuse) placed.push({ x, y, cx: x + ox, cy: y - lift });
-    }
+    if (labels._semi !== semi) { labels._semi = semi; labels.classList.toggle('semi', semi); }
+    placeLabels(order, W, H, mini ? 'm' : semi ? 's' : 'f');
     const chipT = provMode ? 'Vista: provincias' : 'Vista: países';
     if (chipEl.textContent !== chipT) chipEl.textContent = chipT;
+  };
+
+  // ── colocación de las pastillas ──
+  // Reglas (como los mapas profesionales: sitios candidatos con coste, choques prohibidos y memoria):
+  //  1. Cada pastilla se mide de verdad (ancho y alto reales en cada tamaño), nada de cajas fijas.
+  //  2. Sitios candidatos alrededor de su punto: encima (lo normal), debajo y a los lados, en anillos cada vez más lejos.
+  //  3. Coste = largo del palito + un poco por no estar encima. Dos pastillas nunca se tapan.
+  //     Cruzar palitos, que un palito atraviese otra pastilla o tapar el punto de otra cuesta mucho.
+  //  4. Memoria: quedarse donde estaba es más barato, así una pastilla solo se mueve si gana claramente (sin saltos).
+  //  5. Cada una parte de su sitio anterior; solo las nuevas buscan sitio desde cero. Después todas revisan su sitio
+  //     dos veces sabiendo dónde están las demás (nadie acaba lejos teniendo hueco cerca, y que otra aparezca
+  //     o se esconda tras el globo no recoloca al resto).
+  //  6. Los cambios de sitio se deslizan en unos 150 ms en vez de saltar.
+  //  7. Si no cabe cerca, antes que alejarse se queda solo con la foto (ocupa menos y su palito sigue corto).
+  const GAP = 22, PAD = 4, KEEP = 40, SOLO = 40;
+  const pillSize = (e, mode) => {
+    const pl = e._pill || (e._pill = e.querySelector('.pill'));
+    const k = mode + (e._loc ? e._loc.dataset.t : '');
+    if (!e._sz || e._sz.k !== k) {
+      const solo = e.classList.contains('solo');
+      if (solo) e.classList.remove('solo');
+      e._sz = { k, w: pl ? pl.offsetWidth : 40, h: pl ? pl.offsetHeight : 40, c: null };
+      if (solo) e.classList.add('solo');
+    }
+    return e._sz;
+  };
+  // candidatos de una caja w×h: [centro x, centro y (relativos al punto), punto de la caja donde llega el palito x, y,
+  // coste base, semiancho, semialto, solo foto], ordenados por coste base
+  const ring = (out, w, h, pen, solo) => {
+    const w2 = w / 2, h2 = h / 2;
+    const add = (cx, cy, p) => {
+      const ax = Math.max(cx - w2, Math.min(cx + w2, 0)), ay = Math.max(cy - h2, Math.min(cy + h2, 0));
+      out.push([cx, cy, ax, ay, Math.hypot(ax, ay) + p + pen, w2, h2, solo]);
+    };
+    const xs = []; for (let d = 0; d <= w2 + 70; d += 18) { xs.push(d); if (d) xs.push(-d); }
+    for (let r = 0; r < 9; r++) {
+      const off = GAP + r * (h + PAD);
+      for (const dx of xs) { add(dx, -off - h2, 0); add(dx, off + h2, 14); }
+    }
+    for (let c = 0; c < 3; c++) {
+      const off = GAP + c * (w + PAD);
+      for (let dy = -2 * h; dy <= 2 * h; dy += 12) { add(off + w2, dy, 8); add(-off - w2, dy, 8); }
+    }
+  };
+  const candidates = (sz, mode) => {
+    if (sz.c) return sz.c;
+    const out = [];
+    ring(out, sz.w, sz.h, 0, false);
+    if (mode !== 'm') ring(out, sz.h, sz.h, SOLO, true); // solo la foto: un cuadrado del alto de la pastilla
+    out.sort((a, b) => a[4] - b[4]);
+    return (sz.c = out);
+  };
+  // ¿se cruzan los segmentos ab y cd?
+  const cross = (ax, ay, bx, by, cx, cy, dx, dy) => {
+    const o = (px, py, qx, qy, rx, ry) => (qx - px) * (ry - py) - (qy - py) * (rx - px);
+    return (o(ax, ay, bx, by, cx, cy) > 0) !== (o(ax, ay, bx, by, dx, dy) > 0) && (o(cx, cy, dx, dy, ax, ay) > 0) !== (o(cx, cy, dx, dy, bx, by) > 0);
+  };
+  // ¿el segmento ab atraviesa la caja (centro c, semitamaño w2×h2)? (recorte de Liang-Barsky)
+  const segBox = (ax, ay, bx, by, cx, cy, w2, h2) => {
+    let t0 = 0, t1 = 1; const dx = bx - ax, dy = by - ay;
+    const p = [-dx, dx, -dy, dy], q = [ax - (cx - w2), cx + w2 - ax, ay - (cy - h2), cy + h2 - ay];
+    for (let i = 0; i < 4; i++) {
+      if (p[i] === 0) { if (q[i] < 0) return false; continue; }
+      const t = q[i] / p[i];
+      if (p[i] < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; }
+    }
+    return t1 - t0 > 0.02;
+  };
+  // coste de poner a «a» en el candidato c frente a las demás ya colocadas (Infinity = prohibido)
+  const costAt = (a, c, others, W, H) => {
+    const cx = a.x + c[0], cy = a.y + c[1], w2 = c[5], h2 = c[6], ax = a.x + c[2], ay = a.y + c[3];
+    if (!a.edge && (cx - w2 < 4 || cx + w2 > W - 4 || cy - h2 < 4 || cy + h2 > H - 4)) return Infinity;
+    let s = c[4];
+    for (const q of others) {
+      if (q === a || !q.c) continue;
+      const qx = q.x + q.c[0], qy = q.y + q.c[1], qw2 = q.c[5], qh2 = q.c[6];
+      if (Math.abs(qx - cx) < w2 + qw2 + 3 && Math.abs(qy - cy) < h2 + qh2 + 3) return Infinity;
+      // nada cerca: ni la caja ni el palito pueden tocarse
+      const minX = Math.min(cx - w2, a.x), maxX = Math.max(cx + w2, a.x), minY = Math.min(cy - h2, a.y), maxY = Math.max(cy + h2, a.y);
+      const qminX = Math.min(qx - qw2, q.x), qmaxX = Math.max(qx + qw2, q.x), qminY = Math.min(qy - qh2, q.y), qmaxY = Math.max(qy + qh2, q.y);
+      if (maxX < qminX || minX > qmaxX || maxY < qminY || minY > qmaxY) continue;
+      const qax = q.x + q.c[2], qay = q.y + q.c[3];
+      if (cross(a.x, a.y, ax, ay, q.x, q.y, qax, qay)) s += 150;
+      if (segBox(a.x, a.y, ax, ay, qx, qy, qw2, qh2)) s += 60;
+      if (segBox(q.x, q.y, qax, qay, cx, cy, w2, h2)) s += 60;
+      if (Math.abs(q.x - cx) < w2 + 7 && Math.abs(q.y - cy) < h2 + 7) s += 40;
+    }
+    return s;
+  };
+  const choose = (a, others, W, H) => {
+    const cs = a.cs; let best = null, bestS = Infinity;
+    for (const c of cs) {
+      if (c[4] - KEEP >= bestS) break;
+      let s = costAt(a, c, others, W, H);
+      if (c === a.prev) s -= KEEP;
+      if (s < bestS) { bestS = s; best = c; }
+    }
+    a.c = best || cs[0];
+  };
+  const placeLabels = (order, W, H, mode) => {
+    const nowT = performance.now(), sig = order.length + mode;
+    // al girar o hacer zoom el reparto casi no cambia: se recalcula como mucho cada 90 ms (o cuando cambia qué se ve o el tamaño)
+    if (S._sig !== sig || nowT - (S._placeT || 0) >= 90) {
+      S._sig = sig; S._placeT = nowT;
+      const items = [];
+      for (const [y, e, x, depth] of order) {
+        if (e.classList.contains('open')) continue;
+        const sz = pillSize(e, mode);
+        const edge = depth < 0.2 || x < 0 || x > W || y < 0 || y > H;
+        const cs = candidates(sz, mode);
+        items.push({ e, x, y, edge, cs, prev: e._st.cand && cs.includes(e._st.cand) ? e._st.cand : null, c: null });
+      }
+      // primero las que tienen más vecinas (las que más difícil lo tienen eligen antes)
+      for (const a of items) { let n = 0; for (const b of items) if (Math.abs(b.x - a.x) < 260 && Math.abs(b.y - a.y) < 160) n++; a.n = n; }
+      const seq = items.slice().sort((p, q) => q.n - p.n || p.y - q.y);
+      const done = [];
+      for (const a of seq) if (a.prev) { a.c = a.prev; done.push(a); }
+      for (const a of seq) if (!a.prev) { choose(a, done, W, H); done.push(a); }
+      for (let pass = 0; pass < 2; pass++) for (const a of seq) choose(a, seq, W, H);
+      for (const a of items) {
+        const st = a.e._st, c = a.c;
+        st.cand = c; st.tgt = [c[0], c[1], c[2], c[3], c[6]];
+        if (st.solo !== c[7]) { st.solo = c[7]; a.e.classList.toggle('solo', c[7]); }
+      }
+    }
+    let moving = false;
+    for (const [y, e, x] of order) {
+      const st = e._st;
+      if (e.classList.contains('open') || !st.tgt) continue;
+      const t = st.tgt;
+      let cur = st.cur;
+      if (!cur) cur = st.cur = t.slice();
+      else if (cur !== t) {
+        let d = 0;
+        for (let i = 0; i < 5; i++) { cur[i] += (t[i] - cur[i]) * 0.35; d = Math.max(d, Math.abs(t[i] - cur[i])); }
+        if (d < 0.4) for (let i = 0; i < 5; i++) cur[i] = t[i]; else moving = true;
+      }
+      // la pastilla, por CSS, está centrada encima del punto con su borde de abajo a 27 px: se desplaza hasta su sitio
+      const tx = cur[0], ty = cur[1] + cur[4] + 27;
+      const key = tx.toFixed(1) + ',' + ty.toFixed(1);
+      if (st.lift !== key) {
+        st.lift = key; st.stemT = null;
+        e._pill.style.translate = Math.abs(tx) < 0.05 && Math.abs(ty) < 0.05 ? '' : tx.toFixed(1) + 'px ' + ty.toFixed(1) + 'px';
+      }
+      if (st.stemT === null || st.stemT === undefined) {
+        // el palito va del punto al borde más cercano de la pastilla; vive en su propia capa debajo de todas
+        st.stemT = 1;
+        const len = Math.hypot(cur[2], cur[3]);
+        e._stem.style.transform = 'translate(' + (st.tx - 1).toFixed(2) + 'px, ' + (st.ty - 24).toFixed(2) + 'px) rotate(' + Math.atan2(cur[2], -cur[3]).toFixed(4) + 'rad) scaleY(' + (len / 24).toFixed(3) + ')';
+      }
+    }
+    if (moving) schedule();
   };
   const schedule = () => { if (!raf) raf = requestAnimationFrame(draw); };
 
