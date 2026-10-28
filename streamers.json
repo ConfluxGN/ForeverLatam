@@ -139,6 +139,28 @@
   "tz": "America/Mexico_City"
  },
  {
+  "twitch": "elbarbawow",
+  "name": "Barba",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/3b4dab1d-0859-4f72-9b69-f187b2c49695-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/elbarbawow",
+   "youtube": "https://www.youtube.com/@elbarbawow",
+   "tiktok": "https://www.tiktok.com/@elbarbawow",
+   "x": "https://x.com/elbarbawow"
+  },
+  "lat": -27.9516,
+  "lon": -58.8053,
+  "country": "Argentina",
+  "country_code": "ARG",
+  "country_iso2": "AR",
+  "province": "Corrientes",
+  "province_id": "p749",
+  "city": "Empedrado",
+  "nationality": "AR",
+  "tz": "America/Argentina/Cordoba",
+  "age": 37
+ },
+ {
   "twitch": "eldikii",
   "name": "Diki",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/59c2be57-ca37-4669-9d30-a81bf68d59e4-profile_image-300x300.jpeg",
