@@ -1764,8 +1764,11 @@ void main(){
   };
   $('q').addEventListener('input', (e) => { S.q = e.target.value; renderRoster(); });
 
+  // total de streamers de la comunidad: el contador de arriba a la derecha muestra cuántos ya están en el mapa
+  const TOTAL_STREAMERS = 70;
   const renderSummary = () => {
     const ps = live();
+    $('count').textContent = S.loaded ? `Streamers en el mapa ${ps.length}/${TOTAL_STREAMERS}` : '';
     const nC = new Set(ps.map((p) => p.country_code)).size, nP = new Set(ps.map((p) => p.province_id).filter(Boolean)).size;
     $('sum').textContent = !S.loaded ? 'Cargando el listado…' : `${ps.length} ${ps.length === 1 ? 'streamer' : 'streamers'} en ${nC} ${nC === 1 ? 'país' : 'países'} y ${nP} ${nP === 1 ? 'provincia' : 'provincias'}`;
     const t = [...S.all.values()].filter((s) => s.deleted).length;

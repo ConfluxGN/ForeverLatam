@@ -269,6 +269,8 @@ body.preview .back { display: inline-flex; }
 .social.has-icon:hover, .social.has-icon:focus-visible { background: none; transform: translateY(-2px); box-shadow: 0 3px 8px rgba(60, 20, 20, .45); }
 .social:hover, .social:focus-visible { background: #7b1e2b; color: #fbf1e2; outline: none; transform: translateY(-1px); }
 .credit { position: absolute; left: calc(12px + env(safe-area-inset-left, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 3; font-size: 11px; color: rgba(190, 190, 190, .5); pointer-events: none; user-select: none; }
+.count { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); top: calc(10px + env(safe-area-inset-top, 0px)); z-index: 3; font-size: 12px; color: rgba(190, 190, 190, .5); font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; user-select: none; }
+body.preview .count { top: calc(56px + env(safe-area-inset-top, 0px)); }
 
 /* pastillas que se reparten: movimiento suave y, lejos, solo la foto */
 .stems { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
