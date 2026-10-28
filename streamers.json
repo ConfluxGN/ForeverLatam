@@ -416,6 +416,26 @@
   "tz": "America/Bogota"
  },
  {
+  "twitch": "majutank",
+  "name": "majutank",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/4b1e2e03-3dcf-4a19-a5ac-00c6cb143b9f-profile_image-300x300.jpeg",
+  "socials": {
+   "youtube": "https://www.youtube.com/@majutank",
+   "kick": "https://kick.com/majutank"
+  },
+  "lat": 32.487,
+  "lon": -114.7822,
+  "country": "Estados Unidos",
+  "country_code": "USA",
+  "country_iso2": "US",
+  "province": "Arizona",
+  "province_id": "p1254",
+  "city": "San Luis",
+  "nationality": "",
+  "tz": "America/Phoenix",
+  "age": 30
+ },
+ {
   "twitch": "mandriloh",
   "name": "Mandriloh",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/f1ac770a-53cb-4450-bc47-5c5d8e594876-profile_image-300x300.png",
