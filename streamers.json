@@ -35,6 +35,25 @@
   "age": 33
  },
  {
+  "twitch": "brianfilthtv",
+  "name": "Brian",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/7c26f167-e629-49f5-9515-cf0f87a221e2-profile_image-300x300.png",
+  "socials": {
+   "youtube": "https://www.youtube.com/@brianfilthtv"
+  },
+  "lat": 33.4484,
+  "lon": -112.074,
+  "country": "Estados Unidos",
+  "country_code": "USA",
+  "country_iso2": "US",
+  "province": "Arizona",
+  "province_id": "p1254",
+  "city": "Phoenix",
+  "nationality": "",
+  "tz": "America/Phoenix",
+  "age": 35
+ },
+ {
   "twitch": "chivopesado",
   "name": "Chivopesado",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/043bbd1e-13d7-4161-8fe8-cbd08fdb69cd-profile_image-300x300.png",
@@ -74,6 +93,23 @@
   "nationality": "AR",
   "tz": "America/Argentina/Buenos_Aires",
   "age": 35
+ },
+ {
+  "twitch": "cm_boyy",
+  "name": "cm_boyy",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/367c7dcd-3685-474b-9c11-763f338d713a-profile_image-300x300.png",
+  "socials": {},
+  "lat": 41.3874,
+  "lon": 2.1686,
+  "country": "España",
+  "country_code": "ESP",
+  "country_iso2": "ES",
+  "province": "Barcelona",
+  "province_id": "p2499",
+  "city": "Barcelona",
+  "nationality": "ES",
+  "tz": "Europe/Madrid",
+  "age": 30
  },
  {
   "twitch": "d4go0",
@@ -219,6 +255,27 @@
   "nationality": "VE",
   "tz": "America/Bogota",
   "age": 34
+ },
+ {
+  "twitch": "elizabethlow",
+  "name": "LuzGaby",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/90fb4804-809e-42a8-919e-ced87613663b-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/lizgwg",
+   "tiktok": "https://www.tiktok.com/@elizabeth.gglow",
+   "x": "https://x.com/luxgwg"
+  },
+  "lat": 19.32,
+  "lon": -99.152,
+  "country": "México",
+  "country_code": "MEX",
+  "country_iso2": "MX",
+  "province": "Ciudad de México",
+  "province_id": "p4211",
+  "city": "",
+  "nationality": "MX",
+  "tz": "America/Mexico_City",
+  "age": 23
  },
  {
   "twitch": "elmelmman",
