@@ -16,6 +16,27 @@
   "tz": "America/Bogota"
  },
  {
+  "twitch": "ayax289",
+  "name": "Ayax",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/1d8de934-4400-4178-901a-25a3a6c75f8d-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/ayax.tv",
+   "youtube": "https://www.youtube.com/@AYAX289",
+   "tiktok": "https://www.tiktok.com/@el_ayax.1"
+  },
+  "lat": 4.711,
+  "lon": -74.0721,
+  "country": "Colombia",
+  "country_code": "COL",
+  "country_iso2": "CO",
+  "province": "Bogotá",
+  "province_id": "p3781",
+  "city": "",
+  "nationality": "CO",
+  "tz": "America/Bogota",
+  "age": 31
+ },
+ {
   "twitch": "billyjimi",
   "name": "Billy",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/7e7bd76c-9f03-4b8f-a852-8c5b19f5596d-profile_image-300x300.png",
