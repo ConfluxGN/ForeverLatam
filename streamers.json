@@ -133,6 +133,25 @@
   "age": 30
  },
  {
+  "twitch": "crisshaplays",
+  "name": "Crissha",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/270c1e9e-8d5f-4213-b377-515e1627a11c-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/crisshaplays",
+   "youtube": "https://www.youtube.com/@Crisshaplays"
+  },
+  "lat": -38.4161,
+  "lon": -63.6167,
+  "country": "Argentina",
+  "country_code": "ARG",
+  "country_iso2": "AR",
+  "province": "",
+  "province_id": "",
+  "city": "",
+  "nationality": "VE",
+  "tz": "America/Argentina/Buenos_Aires"
+ },
+ {
   "twitch": "crolo",
   "name": "crolo",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/20171d98-8bbb-4d43-b387-388b43e9b464-profile_image-300x300.jpeg",
