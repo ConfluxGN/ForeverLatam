@@ -626,6 +626,22 @@
   "age": 39
  },
  {
+  "twitch": "plasmaxlive",
+  "name": "Plasma",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/a5114bb6-aa90-40c8-bf53-9be446bb1dc4-profile_image-300x300.png",
+  "socials": {},
+  "lat": -34.361,
+  "lon": -70.9497,
+  "country": "Chile",
+  "country_code": "CHL",
+  "country_iso2": "CL",
+  "province": "",
+  "province_id": "",
+  "city": "",
+  "nationality": "CL",
+  "tz": "America/Santiago"
+ },
+ {
   "twitch": "psychometal_dev",
   "name": "PsychoMetal",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/4624bf96-6301-4be3-a498-967d380626c4-profile_image-300x300.png",
