@@ -629,7 +629,9 @@
   "twitch": "plasmaxlive",
   "name": "Plasma",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/a5114bb6-aa90-40c8-bf53-9be446bb1dc4-profile_image-300x300.png",
-  "socials": {},
+  "socials": {
+   "instagram": "https://www.instagram.com/plasmax.1"
+  },
   "lat": -34.361,
   "lon": -70.9497,
   "country": "Chile",
@@ -639,7 +641,8 @@
   "province_id": "",
   "city": "",
   "nationality": "CL",
-  "tz": "America/Santiago"
+  "tz": "America/Santiago",
+  "age": 29
  },
  {
   "twitch": "psychometal_dev",
