@@ -793,6 +793,19 @@
   "age": 35
  },
  {
+  "twitch": "zaicks",
+  "name": "Zaicks",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/f52a541d-9444-4de9-834b-ddb7f54b6679-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/byzaicks",
+   "youtube": "https://www.youtube.com/@ZaicksMMO",
+   "tiktok": "https://www.tiktok.com/@byzaicks"
+  },
+  "lat": 4.5709,
+  "lon": -74.2973,
+  "country_code": "COL"
+ },
+ {
   "twitch": "zeodeon",
   "name": "zeodeon",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/b3d3ba49-f919-4d92-bcca-d48bc987a475-profile_image-300x300.png",
