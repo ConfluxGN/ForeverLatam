@@ -801,9 +801,16 @@
    "youtube": "https://www.youtube.com/@ZaicksMMO",
    "tiktok": "https://www.tiktok.com/@byzaicks"
   },
-  "lat": 4.5709,
-  "lon": -74.2973,
-  "country_code": "COL"
+  "lat": -1.4449,
+  "lon": -78.3889,
+  "country": "Ecuador",
+  "country_code": "ECU",
+  "country_iso2": "EC",
+  "province": "",
+  "province_id": "",
+  "city": "",
+  "nationality": "EC",
+  "tz": "America/Guayaquil"
  },
  {
   "twitch": "zeodeon",
