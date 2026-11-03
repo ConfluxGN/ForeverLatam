@@ -133,6 +133,27 @@
   "age": 30
  },
  {
+  "twitch": "corwiiinn",
+  "name": "corwiiinn",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/c1b55795-b2a7-4c39-b3d4-438f00a58099-profile_image-300x300.png",
+  "socials": {
+   "youtube": "https://www.youtube.com/@CORWIIINN",
+   "tiktok": "https://www.tiktok.com/@corwinwow",
+   "x": "https://x.com/Corwiiinn"
+  },
+  "lat": 4.711,
+  "lon": -74.0721,
+  "country": "Colombia",
+  "country_code": "COL",
+  "country_iso2": "CO",
+  "province": "Bogotá",
+  "province_id": "p3781",
+  "city": "",
+  "nationality": "CO",
+  "tz": "America/Bogota",
+  "age": 32
+ },
+ {
   "twitch": "crisshaplays",
   "name": "Crissha",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/270c1e9e-8d5f-4213-b377-515e1627a11c-profile_image-300x300.png",
@@ -626,6 +647,25 @@
   "age": 39
  },
  {
+  "twitch": "nalig_",
+  "name": "Nali",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/3f870c60-0951-4372-8e72-7cf703c95d66-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/nalig_20"
+  },
+  "lat": 4.7502,
+  "lon": -74.088,
+  "country": "Colombia",
+  "country_code": "COL",
+  "country_iso2": "CO",
+  "province": "Bogotá",
+  "province_id": "p3781",
+  "city": "Suba",
+  "nationality": "CO",
+  "tz": "America/Bogota",
+  "age": 25
+ },
+ {
   "twitch": "plasmaxlive",
   "name": "Plasma",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/a5114bb6-aa90-40c8-bf53-9be446bb1dc4-profile_image-300x300.png",
@@ -734,6 +774,26 @@
   "city": "",
   "nationality": "DO",
   "tz": "America/Santo_Domingo"
+ },
+ {
+  "twitch": "widwido",
+  "name": "widwido",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/27f525ec-3151-4252-91d1-a1cf3ad72e5d-profile_image-300x300.png",
+  "socials": {
+   "youtube": "https://www.youtube.com/@widwido8330",
+   "tiktok": "https://www.tiktok.com/@wiidwido"
+  },
+  "lat": -22.4624,
+  "lon": -68.9272,
+  "country": "Chile",
+  "country_code": "CHL",
+  "country_iso2": "CL",
+  "province": "Antofagasta",
+  "province_id": "p9",
+  "city": "Calama",
+  "nationality": "CL",
+  "tz": "America/Santiago",
+  "age": 31
  },
  {
   "twitch": "winterlyst",
