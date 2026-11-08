@@ -37,6 +37,28 @@
   "age": 31
  },
  {
+  "twitch": "barbacolorada",
+  "name": "barbacolorada",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/ef7c0fb4-e475-4564-a40d-6f38d696db00-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/barbacolorada_",
+   "youtube": "https://www.youtube.com/@BarbaColoradaGaming",
+   "tiktok": "https://www.tiktok.com/@barbacolorada",
+   "kick": "https://kick.com/barbacolorada"
+  },
+  "lat": -53.7877,
+  "lon": -67.7097,
+  "country": "Argentina",
+  "country_code": "ARG",
+  "country_iso2": "AR",
+  "province": "Tierra del Fuego",
+  "province_id": "p1338",
+  "city": "Río Grande",
+  "nationality": "AR",
+  "tz": "America/Argentina/Ushuaia",
+  "age": 29
+ },
+ {
   "twitch": "billyjimi",
   "name": "Billy",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/7e7bd76c-9f03-4b8f-a852-8c5b19f5596d-profile_image-300x300.png",
@@ -142,7 +164,9 @@
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/270c1e9e-8d5f-4213-b377-515e1627a11c-profile_image-300x300.png",
   "socials": {
    "instagram": "https://www.instagram.com/crisshaplays",
-   "youtube": "https://www.youtube.com/@Crisshaplays"
+   "youtube": "https://www.youtube.com/@Crisshaplays",
+   "tiktok": "https://www.tiktok.com/@crisshaplays",
+   "x": "https://x.com/Crissha_s_art"
   },
   "lat": -38.4161,
   "lon": -63.6167,
@@ -178,7 +202,8 @@
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/b4e7e396-1474-4e20-9970-119d24daea43-profile_image-300x300.png",
   "socials": {
    "instagram": "https://www.instagram.com/d4g0o",
-   "youtube": "https://www.youtube.com/@D4GO0"
+   "youtube": "https://www.youtube.com/@D4GO0",
+   "tiktok": "https://www.tiktok.com/@d4go0"
   },
   "lat": 19.3574,
   "lon": -99.0926,
@@ -512,6 +537,26 @@
   "nationality": "AR",
   "tz": "America/Argentina/Buenos_Aires",
   "age": 25
+ },
+ {
+  "twitch": "littleryukaiser",
+  "name": "littleryukaiser",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/1c2c0947-f843-45f5-aff1-f9fbd826d0a9-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/ryukaiser_vill",
+   "youtube": "https://www.youtube.com/@RyuKaiserOrakmin"
+  },
+  "lat": 10.005,
+  "lon": -84.153,
+  "country": "Costa Rica",
+  "country_code": "CRI",
+  "country_iso2": "CR",
+  "province": "Heredia",
+  "province_id": "p1652",
+  "city": "San Joaquín",
+  "nationality": "CR",
+  "tz": "America/Costa_Rica",
+  "age": 26
  },
  {
   "twitch": "liufei_tv",
