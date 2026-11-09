@@ -735,6 +735,27 @@
   "age": 25
  },
  {
+  "twitch": "niaperniax",
+  "name": "Niax",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/9ba675ab-121b-4945-83f4-a399ca202bfa-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/niaperniax",
+   "youtube": "https://www.youtube.com/@niaperniax",
+   "tiktok": "https://www.tiktok.com/@niaperniax"
+  },
+  "lat": -27.3668,
+  "lon": -70.3323,
+  "country": "Chile",
+  "country_code": "CHL",
+  "country_iso2": "CL",
+  "province": "Atacama",
+  "province_id": "p1318",
+  "city": "Copiapó",
+  "nationality": "VE",
+  "tz": "America/Santiago",
+  "age": 25
+ },
+ {
   "twitch": "plasmaxlive",
   "name": "Plasma",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/a5114bb6-aa90-40c8-bf53-9be446bb1dc4-profile_image-300x300.png",
