@@ -516,6 +516,26 @@
   "age": 43
  },
  {
+  "twitch": "kmscarloz",
+  "name": "Elcarloz",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/a32c1693-20ed-4119-9f86-113032fc95f6-profile_image-300x300.png",
+  "socials": {
+   "youtube": "https://www.youtube.com/@daragoncf4491",
+   "tiktok": "https://www.tiktok.com/@elcarloz"
+  },
+  "lat": 6.5552,
+  "lon": -73.1336,
+  "country": "Colombia",
+  "country_code": "COL",
+  "country_iso2": "CO",
+  "province": "Santander",
+  "province_id": "p3782",
+  "city": "San Gil",
+  "nationality": "CO",
+  "tz": "America/Bogota",
+  "age": 28
+ },
+ {
   "twitch": "ladyashbringer",
   "name": "Ash",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/ebdaa60b-1a7e-4d67-8205-700fda57a3fa-profile_image-300x300.png",
@@ -595,6 +615,27 @@
   "city": "Concepción",
   "nationality": "",
   "tz": "America/Santiago"
+ },
+ {
+  "twitch": "luksmatts",
+  "name": "LuksMatts",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/48e0770d-95ed-4121-b817-57912c2e266f-profile_image-300x300.png",
+  "socials": {
+   "youtube": "https://www.youtube.com/@luksmatts3279",
+   "tiktok": "https://www.tiktok.com/@luksmatts",
+   "instagram": "https://www.instagram.com/luksmatts"
+  },
+  "lat": 6.5552,
+  "lon": -73.1336,
+  "country": "Colombia",
+  "country_code": "COL",
+  "country_iso2": "CO",
+  "province": "Santander",
+  "province_id": "p3782",
+  "city": "San Gil",
+  "nationality": "CO",
+  "tz": "America/Bogota",
+  "age": 29
  },
  {
   "twitch": "mandriloh",
