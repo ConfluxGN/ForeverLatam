@@ -401,6 +401,45 @@
   "age": 40
  },
  {
+  "twitch": "facemanq_",
+  "name": "facemanq_",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/b62a835f-fd09-402b-a0f4-38d5f08bf548-profile_image-300x300.png",
+  "socials": {
+   "instagram": "https://www.instagram.com/facemanq_"
+  },
+  "lat": 17.9583,
+  "lon": -102.2,
+  "country": "México",
+  "country_code": "MEX",
+  "country_iso2": "MX",
+  "province": "Michoacán",
+  "province_id": "p2098",
+  "city": "Lázaro Cárdenas",
+  "nationality": "MX",
+  "tz": "America/Mexico_City",
+  "age": 31
+ },
+ {
+  "twitch": "factoryfear_",
+  "name": "FactoryFear",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/0b5e97ca-33e0-4dcf-b8c4-6433489615f9-profile_image-300x300.png",
+  "socials": {
+   "tiktok": "https://www.tiktok.com/@FactoryFear",
+   "x": "https://x.com/FactoryFear"
+  },
+  "lat": -11.992,
+  "lon": -77.0706,
+  "country": "Perú",
+  "country_code": "PER",
+  "country_iso2": "PE",
+  "province": "Lima",
+  "province_id": "p1811",
+  "city": "Los Olivos",
+  "nationality": "PE",
+  "tz": "America/Lima",
+  "age": 25
+ },
+ {
   "twitch": "friiigg",
   "name": "Frigg",
   "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/18f0a8d6-9cc9-4f0b-a717-5f584ee02832-profile_image-300x300.png",
@@ -557,6 +596,24 @@
   "nationality": "AR",
   "tz": "America/Argentina/Buenos_Aires",
   "age": 25
+ },
+ {
+  "twitch": "lamorgo",
+  "name": "Lamorgo",
+  "avatar": "https://static-cdn.jtvnw.net/jtv_user_pictures/9713e5ec-8fa9-4c7b-9da5-bc4c66d665de-profile_image-300x300.png",
+  "socials": {
+   "youtube": "https://www.youtube.com/@Lamorgo"
+  },
+  "lat": 10.4806,
+  "lon": -66.9036,
+  "country": "Venezuela",
+  "country_code": "VEN",
+  "country_iso2": "VE",
+  "province": "Distrito Capital",
+  "province_id": "p3216",
+  "city": "Caracas",
+  "nationality": "VE",
+  "tz": "America/Caracas"
  },
  {
   "twitch": "littleryukaiser",
