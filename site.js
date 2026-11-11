@@ -1632,12 +1632,30 @@ void main(){
     } catch { EVENTO.clear(); for (const p of live()) { LIVE.delete(p.twitch); paintLive(p.twitch); } } finally { polling = false; }
   };
   // banner del evento: mismo borde 13.1; al tocarlo lleva a la ficha de quien lo presenta. Se cierra para esta visita.
-  { const EV_HOST = 'brianfilthtv', bn = $('ev-banner');
+  // El admin puede ocultarlo para todos (evento.json "banner": false); hasta leerlo no se muestra.
+  let evBanner = false;
+  const showBanner = (on) => {
+    evBanner = on; paintBannerBtn();
+    const bn = $('ev-banner'); if (!bn) return;
     let shut = false; try { shut = sessionStorage.getItem('fl_ev_banner') === '0'; } catch {}
-    if (bn && !shut) {
-      bn.hidden = false; drawEvFx(bn); new ResizeObserver(() => drawEvFx(bn)).observe(bn);
+    bn.hidden = !on || shut;
+    if (!bn.hidden) drawEvFx(bn);
+  };
+  const paintBannerBtn = () => {
+    const b = $('btn-banner'); if (!b) return;
+    b.textContent = evBanner ? 'Aviso: visible' : 'Aviso: oculto';
+    b.title = evBanner ? 'Los visitantes ven el aviso del evento. Tocá para ocultarlo.' : 'Los visitantes no ven el aviso del evento. Tocá para mostrarlo.';
+    b.setAttribute('aria-pressed', String(evBanner));
+  };
+  { const EV_HOST = 'brianfilthtv', bn = $('ev-banner');
+    if (bn) {
+      new ResizeObserver(() => { if (!bn.hidden) drawEvFx(bn); }).observe(bn);
       $('ev-banner-go').addEventListener('click', () => { const p = live().find((x) => x.twitch === EV_HOST); if (!p) return; openCard(p.twitch); flyTo(p); });
       $('ev-banner-x').addEventListener('click', () => { bn.hidden = true; try { sessionStorage.setItem('fl_ev_banner', '0'); } catch {} });
+      fetch(`evento.json?t=${Math.floor(Date.now() / 60000)}`, { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => showBanner(!!d && d.banner !== false))
+        .catch(() => showBanner(false));
     }
   }
   let polling = false, lastPoll = 0;
@@ -2211,14 +2229,27 @@ void main(){
     try {
       const j = await gh(`/contents/${EV_FILE}?ref=${CFG.branch}`); evSha = j.sha;
       const d = JSON.parse(b64dec(j.content));
+      showBanner(d.banner !== false);
       return Array.isArray(d.frases) ? d.frases.map(evClean).filter((f) => evKey(f).length >= 3) : [];
     } catch (e) { if (e.status === 404) { evSha = null; return []; } throw e; }
   };
-  const saveEvento = async (frases, message) => {
-    const body = { message, content: b64enc(JSON.stringify({ frases }, null, 2) + '\n'), branch: CFG.branch };
+  const saveEvento = async (frases, message, banner = evBanner) => {
+    const body = { message, content: b64enc(JSON.stringify({ frases, banner }, null, 2) + '\n'), branch: CFG.branch };
     if (evSha) body.sha = evSha;
     const j = await gh(`/contents/${EV_FILE}`, { method: 'PUT', body: JSON.stringify(body) });
     evSha = j.content.sha;
+  };
+  // admin: mostrar u ocultar a todos el aviso del evento (se guarda en evento.json junto a las frases)
+  let bannerBusy = false;
+  const toggleBanner = async () => {
+    if (bannerBusy) return;
+    bannerBusy = true;
+    try {
+      const frases = await loadEvento(), next = !evBanner;
+      await saveEvento(frases, next ? 'Evento: mostrar el aviso' : 'Evento: ocultar el aviso', next);
+      showBanner(next);
+      toast(next ? 'Aviso del evento visible para todos. Se verá en la web en unos minutos.' : 'Aviso del evento oculto para todos. Se quitará de la web en unos minutos.');
+    } catch (e) { fail(e); } finally { bannerBusy = false; }
   };
   const openEvento = async () => {
     let frases;
@@ -2290,6 +2321,7 @@ void main(){
   $('btn-hist').addEventListener('click', openHistory);
   $('btn-trash').addEventListener('click', openTrash);
   $('btn-event').addEventListener('click', openEvento);
+  $('btn-banner').addEventListener('click', toggleBanner);
   $('btn-export').addEventListener('click', exportCopy);
   $('btn-import').addEventListener('click', () => $('import-file').click());
   $('import-file').addEventListener('change', async (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) await importCopy(f); });
@@ -2330,7 +2362,7 @@ void main(){
     const foot = el('div', 'sheet-foot'); const r = el('div', 'right'); r.append(cancel, go); foot.append(r);
     openSheet([box, foot]);
   };
-  const ADMIN_BTNS = ['btn-add', 'btn-hist', 'btn-trash', 'btn-event', 'btn-bracket', 'btn-export', 'btn-import', 'btn-preview', 'btn-logout'];
+  const ADMIN_BTNS = ['btn-add', 'btn-hist', 'btn-trash', 'btn-event', 'btn-banner', 'btn-bracket', 'btn-export', 'btn-import', 'btn-preview', 'btn-logout'];
   const setMode = (mode) => {
     S.mode = mode; S.canEdit = mode === 'admin';
     document.body.classList.toggle('public', mode !== 'admin');
@@ -2339,6 +2371,7 @@ void main(){
     ADMIN_BTNS.forEach((id) => { $(id).hidden = mode !== 'admin'; });
     // bracket: los visitantes (y «Ver como visitante») solo ven su botón si está visible; en admin se lee su estado real
     if (torneo) { torneo.sync(); if (mode === 'admin') torneo.refrescar(); }
+    if (mode === 'admin') loadEvento().catch(() => { /* sin evento.json: el botón queda como está */ });
     S.open = null; renderAll(); resize();
   };
   const start = async (quiet) => {
