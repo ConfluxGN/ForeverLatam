@@ -1637,9 +1637,18 @@ void main(){
   const showBanner = (on) => {
     evBanner = on; paintBannerBtn();
     const bn = $('ev-banner'); if (!bn) return;
-    let shut = false; try { shut = sessionStorage.getItem('fl_ev_banner') === '0'; } catch {}
-    bn.hidden = !on || shut;
+    let min = false; try { min = ['0', 'min'].includes(sessionStorage.getItem('fl_ev_banner')); } catch {}
+    setBannerMin(min, false);
+    bn.hidden = !on;
     if (!bn.hidden) drawEvFx(bn);
+  };
+  // la X pliega el aviso (queda solo el título); al tocarlo plegado se vuelve a abrir. Se recuerda en esta visita.
+  const setBannerMin = (min, save = true) => {
+    const bn = $('ev-banner'); if (!bn) return;
+    bn.classList.toggle('is-min', min);
+    $('ev-banner-go').setAttribute('aria-expanded', String(!min));
+    $('ev-banner-go').title = min ? 'Ver el aviso del evento' : '';
+    if (save) try { sessionStorage.setItem('fl_ev_banner', min ? 'min' : 'open'); } catch {}
   };
   const paintBannerBtn = () => {
     const b = $('btn-banner'); if (!b) return;
@@ -1650,8 +1659,11 @@ void main(){
   { const EV_HOST = 'brianfilthtv', bn = $('ev-banner');
     if (bn) {
       new ResizeObserver(() => { if (!bn.hidden) drawEvFx(bn); }).observe(bn);
-      $('ev-banner-go').addEventListener('click', () => { const p = live().find((x) => x.twitch === EV_HOST); if (!p) return; openCard(p.twitch); flyTo(p); });
-      $('ev-banner-x').addEventListener('click', () => { bn.hidden = true; try { sessionStorage.setItem('fl_ev_banner', '0'); } catch {} });
+      $('ev-banner-go').addEventListener('click', () => {
+        if (bn.classList.contains('is-min')) { setBannerMin(false); return; }
+        const p = live().find((x) => x.twitch === EV_HOST); if (!p) return; openCard(p.twitch); flyTo(p);
+      });
+      $('ev-banner-x').addEventListener('click', () => { setBannerMin(true); $('ev-banner-go').focus(); });
       fetch(`evento.json?t=${Math.floor(Date.now() / 60000)}`, { cache: 'no-store' })
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => showBanner(!!d && d.banner !== false))
@@ -1842,7 +1854,7 @@ void main(){
   $('q').addEventListener('input', (e) => { S.q = e.target.value; renderRoster(); });
 
   // total de streamers de la comunidad: el contador de arriba a la derecha muestra cuántos ya están en el mapa
-  const TOTAL_STREAMERS = 70;
+  const TOTAL_STREAMERS = 85;
   const renderSummary = () => {
     const ps = live();
     $('count').textContent = S.loaded ? `Streamers en el mapa ${ps.length}/${TOTAL_STREAMERS}` : '';
