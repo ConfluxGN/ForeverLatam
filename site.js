@@ -1227,6 +1227,8 @@ void main(){
     const snapDist = (i) => { const p = i && projection(i.c); return p ? Math.hypot(p[0] - W / 2, p[1] - H / 2) : Infinity; };
     // sirve si su zoom no se aleja mucho del actual: reducida se ve nítida y ampliada como mucho un 50 % (solo unas imágenes en pleno zoom, mientras se rehace)
     const fresh = (i) => !!i && i.sig === snapSig && sphereR / i.s >= 0.5 && sphereR / i.s <= 1.5 && covers(i);
+    // de recurso en marcha: mismos datos y zoom no muy lejano (puede verse algo borrosa o sin el último borde unos instantes)
+    const usable = (i) => !!i && i.sig === snapSig && sphereR / i.s >= 0.5 && sphereR / i.s <= 2.2;
     // la pantalla entera cae dentro de la foto (con su zoom y lo que se ha desplazado)
     function covers(i) { const r = sphereR / i.s, d = snapDist(i); return (W / 2 + d) / r <= W / 2 + 0.9 * i.m + 0.5 && (H / 2 + d) / r <= H / 2 + 0.9 * i.m + 0.5; }
     const exact = (i) => !!i && Math.abs(sphereR / i.s - 1) < 1e-4;
@@ -1299,7 +1301,12 @@ void main(){
       // si la foto ya no sirve (zoom brusco), se pinta la pantalla directamente y la nueva se prepara por franjas
       // cuando el zoom se calma: nunca entera de golpe, que congela la página
       // salto brusco de zoom (rueda de golpe): se pinta directo y la foto se rehace al calmarse; en zoom suave, foto entera
-      if (!fresh(GL.snap()) && !(zooming && Math.abs(sphereR / prevR - 1) > 0.08)) buildAll();
+      // en marcha, una foto algo gastada (un poco borrosa o corta en el borde) se sigue usando mientras la nueva se hace
+      // por franjas: rehacerla entera de golpe congelaba la página medio segundo en cada zoom (sobre todo con una ficha abierta)
+      const sn = GL.snap();
+      if (moving && !fresh(sn) && usable(sn)) { GL.reproject(); buildStep(); }
+      else {
+      if (!fresh(sn) && !(zooming && Math.abs(sphereR / prevR - 1) > 0.08)) buildAll();
       if (!fresh(GL.snap())) { GL.clear(); paintMap(); if (!moving) buildSoon(); }
       else {
       const i = GL.snap();
@@ -1307,6 +1314,7 @@ void main(){
       // en marcha solo se prepara otra foto cuando esta se va a acabar (o, quieto el zoom, para volver a la nitidez exacta)
       if (moving) { const fl = framesLeft(i); if (build || fl < SNAP_BANDS + 3 || (!zooming && !exact(i))) buildStep(); }
       else if (!still(i)) buildSoon();
+      }
       }
     } else {
       if (GL) GL.clear();
@@ -1531,7 +1539,12 @@ void main(){
         if (p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon)) {
           const f = Math.min(1, 1 - S.k / t.k) * 1.6;
           let lon1 = -p.lon; while (lon1 - S.rot[0] > 180) lon1 -= 360; while (lon1 - S.rot[0] < -180) lon1 += 360;
-          S.rot = [S.rot[0] + (lon1 - S.rot[0]) * f, S.rot[1] + (-p.lat - S.rot[1]) * f];
+          let dl = (lon1 - S.rot[0]) * f, dp = (-p.lat - S.rot[1]) * f;
+          // como mucho unos píxeles por paso de rueda: si el giro salta más, la foto del mapa deja de servir
+          // y se rehace entera en cada imagen (de cerca congela la página)
+          const px = Math.hypot(dl, dp) * RAD * R * t.k, MAX_PX = 28;
+          if (px > MAX_PX) { dl *= MAX_PX / px; dp *= MAX_PX / px; }
+          S.rot = [S.rot[0] + dl, Math.max(-89, Math.min(89, S.rot[1] + dp))];
         }
       }
       // con la ventana a tamaño cero (pestaña oculta) el zoom puede dar un valor roto: se ignora y se deja el último bueno
@@ -1566,10 +1579,45 @@ void main(){
   });
 
   // estado en directo: lee live.json, que actualiza cada 5 min la API oficial de Twitch (en-directo.yml)
-  const LIVE = new Map();
-  try { const c = JSON.parse(localStorage.getItem('fl_live') || 'null'); if (c && Date.now() - c.t < 15 * 60000) for (const k in c.v) LIVE.set(k, !!c.v[k]); } catch {}
-  const saveLive = () => { try { localStorage.setItem('fl_live', JSON.stringify({ t: Date.now(), v: Object.fromEntries(LIVE) })); } catch {} };
-  const paintLive = (login) => { const pin = pins.get(login); if (pin) { const v = LIVE.get(login); pin.classList.toggle('is-live', v === true); pin.classList.toggle('is-off', v === false); } };
+  // EVENTO: quien lleva la palabra clave del evento en el título de su canal (live.json "evento") sale con el borde 13.1
+  // («borde que hierve», violeta oscuro): un SVG con turbulencia que sube sin parar alrededor de la pastilla o la ficha.
+  // La versión guardada con las demás variantes está en efectos-guardados/ (no se publica).
+  const LIVE = new Map(), EVENTO = new Set();
+  const EV_M = 18, EV_T = 34, EV_TH = 40, EV_SVG = 'http://www.w3.org/2000/svg'; let evUid = 0;
+  const evRR = (x, y, w, h, r) => `M${x + r} ${y}H${x + w - r}A${r} ${r} 0 0 1 ${x + w} ${y + r}V${y + h - r}A${r} ${r} 0 0 1 ${x + w - r} ${y + h}H${x + r}A${r} ${r} 0 0 1 ${x} ${y + h - r}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}Z`;
+  const drawEvFx = (box) => {
+    const w = box.offsetWidth, h = box.offsetHeight; if (!w || !h) return;
+    const k = w + 'x' + h, old = box.querySelector(':scope > .ev-fx');
+    if (old && box.dataset.evk === k) return;
+    box.dataset.evk = k; if (old) old.remove();
+    const rs = getComputedStyle(box).borderTopLeftRadius, rv = parseFloat(rs) || 8;
+    const r = Math.min(rs.endsWith('%') ? Math.min(w, h) * rv / 100 : rv, Math.min(w, h) / 2);
+    const W = w + 2 * EV_M, H = h + EV_T + EV_M, id = 'evf' + (++evUid), P = evRR(EV_M - 3, EV_T - 3, w + 6, h + 6, r + 3);
+    const svg = document.createElementNS(EV_SVG, 'svg'); svg.setAttribute('class', 'ev-fx'); svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.style.left = -(EV_M + box.clientLeft) + 'px'; svg.style.top = -(EV_T + box.clientTop) + 'px';
+    // solo números calculados aquí: no entra ningún dato de fuera
+    svg.innerHTML = `<defs><filter id="${id}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">` +
+      `<feTurbulence type="fractalNoise" baseFrequency="0.07 0.1" numOctaves="2" seed="${evUid}" stitchTiles="stitch" x="0" y="0" width="${W}" height="${EV_TH}" result="n"/>` +
+      `<feTile in="n" x="0" y="0" width="${W}" height="${EV_TH * 2}" result="n2"/>` +
+      `<feOffset in="n2" x="0" y="0" width="${W}" height="${EV_TH}" dy="0" result="n3"><animate attributeName="dy" from="0" to="-${EV_TH}" dur="1.1s" repeatCount="indefinite"/></feOffset>` +
+      `<feTile in="n3" x="0" y="0" width="${W}" height="${H}" result="n4"/>` +
+      `<feDisplacementMap in="SourceGraphic" in2="n4" scale="10" xChannelSelector="R" yChannelSelector="G"/></filter>` +
+      `<mask id="${id}m" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#fff"/><path d="${evRR(EV_M, EV_T, w, h, r)}" fill="#000"/></mask></defs>` +
+      `<g mask="url(#${id}m)"><g filter="url(#${id})" fill="none" stroke-linejoin="round">` +
+      `<path d="${P}" stroke="#12051f" stroke-width="11"/><path d="${P}" stroke="#8b3dff" stroke-width="7"/><path d="${P}" stroke="#3b0f6b" stroke-width="2.4"/></g></g>`;
+    box.append(svg);
+  };
+  // la pastilla cambia de tamaño (alejar el mapa, abrir la ficha): se vuelve a dibujar a su medida
+  const evObs = new ResizeObserver((es) => { for (const e of es) if (e.target.closest('.pin.is-event')) drawEvFx(e.target); });
+  const syncEvFx = (pin) => {
+    const box = pin.querySelector('.pill, .card'); if (!box) return;
+    if (pin.classList.contains('is-event')) { drawEvFx(box); evObs.observe(box); }
+    else { evObs.unobserve(box); box.querySelector(':scope > .ev-fx')?.remove(); delete box.dataset.evk; }
+  };
+  try { const c = JSON.parse(localStorage.getItem('fl_live') || 'null'); if (c && Date.now() - c.t < 15 * 60000) { for (const k in c.v) LIVE.set(k, !!c.v[k]); for (const k of c.e || []) EVENTO.add(k); } } catch {}
+  const saveLive = () => { try { localStorage.setItem('fl_live', JSON.stringify({ t: Date.now(), v: Object.fromEntries(LIVE), e: [...EVENTO] })); } catch {} };
+  const paintLive = (login) => { const pin = pins.get(login); if (pin) { const v = LIVE.get(login); pin.classList.toggle('is-live', v === true); pin.classList.toggle('is-off', v === false); pin.classList.toggle('is-event', EVENTO.has(login)); syncEvFx(pin); } };
   const pollLive = async () => {
     if (document.hidden || polling || !live().length) return;
     polling = true; lastPoll = Date.now();
@@ -1578,10 +1626,20 @@ void main(){
       const d = await r.json();
       if (Date.now() - Date.parse(d.t) > 20 * 60000) throw 0; // dato caducado: mejor no mostrar nada que mostrar algo falso
       const on = new Set(d.live);
-      for (const p of live()) { if (isKick(p)) continue; LIVE.set(p.twitch, on.has(p.twitch)); paintLive(p.twitch); }
+      EVENTO.clear(); for (const k of Array.isArray(d.evento) ? d.evento : []) EVENTO.add(String(k).toLowerCase());
+      for (const p of live()) { if (!isKick(p)) LIVE.set(p.twitch, on.has(p.twitch)); paintLive(p.twitch); }
       saveLive();
-    } catch { for (const p of live()) { LIVE.delete(p.twitch); paintLive(p.twitch); } } finally { polling = false; }
+    } catch { EVENTO.clear(); for (const p of live()) { LIVE.delete(p.twitch); paintLive(p.twitch); } } finally { polling = false; }
   };
+  // banner del evento: mismo borde 13.1; al tocarlo lleva a la ficha de quien lo presenta. Se cierra para esta visita.
+  { const EV_HOST = 'brianfilthtv', bn = $('ev-banner');
+    let shut = false; try { shut = sessionStorage.getItem('fl_ev_banner') === '0'; } catch {}
+    if (bn && !shut) {
+      bn.hidden = false; drawEvFx(bn); new ResizeObserver(() => drawEvFx(bn)).observe(bn);
+      $('ev-banner-go').addEventListener('click', () => { const p = live().find((x) => x.twitch === EV_HOST); if (!p) return; openCard(p.twitch); flyTo(p); });
+      $('ev-banner-x').addEventListener('click', () => { bn.hidden = true; try { sessionStorage.setItem('fl_ev_banner', '0'); } catch {} });
+    }
+  }
   let polling = false, lastPoll = 0;
   const needLive = () => { if (Date.now() - lastPoll > 20000 && live().some((p) => !isKick(p) && !LIVE.has(p.twitch))) pollLive(); };
   setInterval(pollLive, 60000);
@@ -1606,9 +1664,9 @@ void main(){
   // pins
   const pins = new Map();
   const buildPins = () => {
-    pins.clear(); labels.replaceChildren(); stemsEl.replaceChildren();
+    pins.clear(); labels.replaceChildren(); stemsEl.replaceChildren(); evObs.disconnect();
     live().forEach((p, i) => {
-      const pin = el('div', 'pin'); pin.dataset.login = p.twitch; { const v = isKick(p) ? undefined : LIVE.get(p.twitch); if (v === true) pin.classList.add('is-live'); else if (v === false) pin.classList.add('is-off'); }
+      const pin = el('div', 'pin'); pin.dataset.login = p.twitch; { const v = isKick(p) ? undefined : LIVE.get(p.twitch); if (v === true) pin.classList.add('is-live'); else if (v === false) pin.classList.add('is-off'); if (EVENTO.has(p.twitch)) pin.classList.add('is-event'); }
       const fl = el('div', 'pin-float bob'); fl.style.animationDelay = (i % 7) * 0.45 + 's';
       const stem = el('div', 'pin-stem'); stemsEl.append(stem);
       if (S.open === p.twitch) { pin.classList.add('open'); fl.append(buildCard(p)); fl.classList.remove('bob'); }
@@ -1626,6 +1684,7 @@ void main(){
       }
       pin.append(fl, el('div', 'pin-dot'));
       pin._stem = stem; labels.append(pin); pins.set(p.twitch, pin);
+      if (pin.classList.contains('is-event')) syncEvFx(pin);
     });
   };
   // chevron that says "this opens downwards"
@@ -2141,6 +2200,73 @@ void main(){
     openSheet([el('h3', null, 'Papelera'), el('p', 'hint', 'Los streamers que borres esperan acá hasta que los restaures o los borres para siempre.'), ul, foot]);
   };
 
+  // ---------- frases del evento (evento.json) ----------
+  // Quien lleve una de estas frases en el título de su directo sale con el borde del evento.
+  // .github/en_directo.py (repo público) las lee y las compara igual que evKey: solo letras y números.
+  const EV_FILE = 'evento.json', EV_MAX = 10, EV_LEN = 60;
+  const evClean = (t) => String(t || '').replace(/\s+/g, ' ').trim().slice(0, EV_LEN);
+  const evKey = (t) => String(t || '').normalize('NFKD').toLowerCase().replace(/[^a-z0-9]/g, '');
+  let evSha = null;
+  const loadEvento = async () => {
+    try {
+      const j = await gh(`/contents/${EV_FILE}?ref=${CFG.branch}`); evSha = j.sha;
+      const d = JSON.parse(b64dec(j.content));
+      return Array.isArray(d.frases) ? d.frases.map(evClean).filter((f) => evKey(f).length >= 3) : [];
+    } catch (e) { if (e.status === 404) { evSha = null; return []; } throw e; }
+  };
+  const saveEvento = async (frases, message) => {
+    const body = { message, content: b64enc(JSON.stringify({ frases }, null, 2) + '\n'), branch: CFG.branch };
+    if (evSha) body.sha = evSha;
+    const j = await gh(`/contents/${EV_FILE}`, { method: 'PUT', body: JSON.stringify(body) });
+    evSha = j.content.sha;
+  };
+  const openEvento = async () => {
+    let frases;
+    try { frases = await loadEvento(); } catch (e) { fail(e); return; }
+    const ul = el('ul', 'hist');
+    const input = inp('f-ev', 'text', '', { maxlength: String(EV_LEN), placeholder: 'Por ejemplo: #ForeverEvento', autocomplete: 'off' });
+    const err = el('div', 'err');
+    const addBtn = el('button', 'btn primary', 'Añadir'); addBtn.type = 'button';
+    let busy = false;
+    const paint = () => {
+      ul.replaceChildren();
+      if (!frases.length) ul.append(el('li', 'empty', 'No hay ninguna frase: nadie sale marcado.'));
+      for (const f of frases) {
+        const li = el('li'); li.append(el('div', 'what', f));
+        const rm = el('button', 'btn small danger', 'Quitar'); rm.type = 'button';
+        rm.addEventListener('click', () => commit(frases.filter((x) => x !== f), `Evento: quitar la frase «${f}»`, `Frase quitada: ${f}`));
+        li.append(rm); ul.append(li);
+      }
+      addBtn.disabled = frases.length >= EV_MAX;
+    };
+    const commit = async (next, message, okMsg) => {
+      if (busy) return;
+      busy = true; err.textContent = '';
+      try { await saveEvento(next, message); frases = next; paint(); toast(`${okMsg}. Se verá en el mapa en unos minutos.`); }
+      catch (e) {
+        if (e.status === 409 || e.status === 422) { try { frases = await loadEvento(); paint(); } catch { /* la recarga falla: queda la lista anterior */ } }
+        fail(e);
+      } finally { busy = false; }
+    };
+    const add = () => {
+      const f = evClean(input.value);
+      if (evKey(f).length < 3) { err.textContent = 'La frase necesita al menos 3 letras o números.'; return; }
+      if (frases.some((x) => evKey(x) === evKey(f))) { err.textContent = 'Esa frase ya está en la lista.'; return; }
+      if (frases.length >= EV_MAX) { err.textContent = `Como máximo ${EV_MAX} frases.`; return; }
+      input.value = '';
+      commit([...frases, f], `Evento: añadir la frase «${f}»`, `Frase añadida: ${f}`);
+    };
+    addBtn.addEventListener('click', add);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') add(); });
+    paint();
+    const row = el('div', 'ev-add'); row.append(field('Frase nueva', input, { full: true }), addBtn);
+    const foot = el('div', 'sheet-foot'); const c = el('button', 'btn', 'Cerrar'); c.type = 'button'; c.addEventListener('click', closeSheet);
+    const r = el('div', 'right'); r.append(c); foot.append(r);
+    openSheet([el('h3', null, 'Frases del evento'),
+      el('p', 'hint', 'Quien tenga una de estas frases en el título de su directo de Twitch sale en el mapa con el marco violeta animado. No importan las mayúsculas, los acentos, los espacios ni la «#».'),
+      ul, row, err, foot]);
+  };
+
   // ---------- export / import ----------
   const exportCopy = () => {
     const data = JSON.stringify({ app: 'globo-de-streamers', version: 1, exportedAt: nowIso(), streamers: [...S.all.values()] }, null, 2);
@@ -2163,9 +2289,13 @@ void main(){
   $('btn-add').addEventListener('click', () => openForm(null));
   $('btn-hist').addEventListener('click', openHistory);
   $('btn-trash').addEventListener('click', openTrash);
+  $('btn-event').addEventListener('click', openEvento);
   $('btn-export').addEventListener('click', exportCopy);
   $('btn-import').addEventListener('click', () => $('import-file').click());
   $('import-file').addEventListener('change', async (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) await importCopy(f); });
+
+  // bracket del torneo (torneo.js): botón flotante arriba a la derecha del globo
+  const torneo = window.flTorneo ? window.flTorneo({ el, gh, b64enc, b64dec, branch: CFG.branch, toast, fail, canEdit: () => S.canEdit }) : null;
 
   $('btn-logout').addEventListener('click', () => { setToken(''); location.replace(location.pathname); });
 
@@ -2200,13 +2330,15 @@ void main(){
     const foot = el('div', 'sheet-foot'); const r = el('div', 'right'); r.append(cancel, go); foot.append(r);
     openSheet([box, foot]);
   };
-  const ADMIN_BTNS = ['btn-add', 'btn-hist', 'btn-trash', 'btn-export', 'btn-import', 'btn-preview', 'btn-logout'];
+  const ADMIN_BTNS = ['btn-add', 'btn-hist', 'btn-trash', 'btn-event', 'btn-bracket', 'btn-export', 'btn-import', 'btn-preview', 'btn-logout'];
   const setMode = (mode) => {
     S.mode = mode; S.canEdit = mode === 'admin';
     document.body.classList.toggle('public', mode !== 'admin');
     document.body.classList.toggle('admin', mode === 'admin');
     document.body.classList.toggle('preview', mode === 'preview');
     ADMIN_BTNS.forEach((id) => { $(id).hidden = mode !== 'admin'; });
+    // bracket: los visitantes (y «Ver como visitante») solo ven su botón si está visible; en admin se lee su estado real
+    if (torneo) { torneo.sync(); if (mode === 'admin') torneo.refrescar(); }
     S.open = null; renderAll(); resize();
   };
   const start = async (quiet) => {

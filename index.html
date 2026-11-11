@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
-<link rel="stylesheet" href="site.css?v=20261028d">
+<link rel="stylesheet" href="site.css?v=20261111j">
 </head>
 <body class="public" data-mode="public">
 <div class="app">
@@ -25,6 +25,8 @@
       <button class="btn primary" id="btn-add" type="button" hidden>+ Agregar streamer</button>
       <button class="btn" id="btn-hist" type="button" hidden>Historial</button>
       <button class="btn" id="btn-trash" type="button" hidden>Papelera <span class="badge" id="trash-n">0</span></button>
+      <button class="btn" id="btn-event" type="button" hidden>Evento</button>
+      <button class="btn" id="btn-bracket" type="button" aria-pressed="false" hidden>Bracket: oculto</button>
       <button class="btn" id="btn-export" type="button" hidden>Exportar copia</button>
       <button class="btn" id="btn-import" type="button" hidden>Importar copia</button>
       <button class="btn" id="btn-preview" type="button" hidden>Ver como visitante</button>
@@ -42,6 +44,16 @@
       <div class="pickbar" id="pickbar" hidden><span>Tocá el globo donde vive</span><button type="button" id="pick-cancel">Cancelar</button></div>
       <div class="chip" id="chip">Vista: países</div>
       <button class="btn primary back" id="btn-back" type="button">Volver al panel</button>
+      <aside class="ev-banner" id="ev-banner" aria-label="Evento de la comunidad" hidden>
+        <button type="button" class="ev-banner-go" id="ev-banner-go">
+          <span class="ev-banner-kick">Evento PvP · Solo No Muertos</span>
+          <span class="ev-banner-title">El llamado de los Condenados</span>
+          <span class="ev-banner-txt">Primer torneo de duelos · Premios de 25, 15 y 10 USD</span>
+          <span class="ev-banner-host">Presenta BrianfilthTV <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 3 7.5 6 4.5 9"/></svg></span>
+        </button>
+        <button type="button" class="ev-banner-x" id="ev-banner-x" aria-label="Cerrar aviso del evento"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6"/></svg></button>
+      </aside>
+      <button type="button" class="bk-open" id="bk-open" hidden>Bracket Torneo</button>
       <div class="credit">Creado por PsychoMetal powered by AI</div>
       <div class="count" id="count" aria-live="polite"></div>
       <div class="zoom"><button type="button" id="zin" aria-label="Acercar">+</button><button type="button" id="zout" aria-label="Alejar">−</button></div>
@@ -57,10 +69,12 @@
 </div>
 
 <div class="overlay" id="overlay" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="bk" id="bk" hidden><div class="bk-panel" id="bk-panel" role="dialog" aria-modal="true" aria-label="Bracket del torneo"></div></div>
 <div class="toast" id="toast" hidden><span id="toast-msg"></span><button type="button" id="toast-btn"></button></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/earcut@2.2.4/dist/earcut.min.js"></script>
-<script src="site.js?v=20261028d"></script>
+<script src="torneo.js?v=20261111j"></script>
+<script src="site.js?v=20261111j"></script>
 </body>
 </html>

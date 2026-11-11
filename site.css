@@ -160,6 +160,8 @@ button, input, select { font: inherit; color: inherit; }
 .hist li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
 .hist .what { font-weight: 600; font-size: 14px; }
 .hist .when { color: var(--muted); font-size: 12px; }
+.ev-add { display: flex; gap: 8px; align-items: flex-end; margin-top: 12px; }
+.ev-add .field { flex: 1; }
 .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; margin-right: 6px; background: var(--surface-2); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .tag.add { background: rgba(31,138,91,.14); color: var(--ok); }
 .tag.delete { background: rgba(194,51,77,.14); color: var(--danger); }
@@ -287,3 +289,134 @@ body.preview .count { top: calc(56px + env(safe-area-inset-top, 0px)); }
 .pin.solo .pill { padding: 1px; gap: 0; }
 .pin.solo .pill-live { left: 0 !important; top: 0 !important; }
 .labels .pill { will-change: translate; } /* cada pastilla en su capa: al deslizarse no se repinta nada */
+
+/* Evento: quien lleva la palabra clave del evento en el título de su canal tiene la pastilla y la ficha con el borde 13.1
+   («borde que hierve», violeta oscuro). El fuego lo dibuja site.js (svg .ev-fx); aquí solo el borde base y la capa. */
+.pin.is-event .pill, .pin.is-event .card, .pin.is-event .pill:hover { border-color: #8b3dff; box-shadow: 0 0 0 1.5px #12051f, 0 6px 14px rgba(20, 5, 30, .5); }
+/* Banner del evento (arriba a la izquierda del globo), con el mismo borde 13.1 */
+.ev-banner { position: absolute; z-index: 6; left: calc(18px + env(safe-area-inset-left, 0px)); top: calc(20px + env(safe-area-inset-top, 0px)); width: min(258px, calc(100% - 110px));
+  background: var(--label-bg); color: var(--label-fg); border: 2px solid #8b3dff; border-radius: 10px; box-shadow: 0 0 0 1.5px #12051f, 0 8px 18px rgba(20, 5, 30, .55); }
+.ev-banner[hidden] { display: none; }
+/* emblema de los Renegados de fondo, con sus colores originales (escudo oficial, forsaken.webp) */
+.ev-banner::before { content: ""; position: absolute; right: 30px; top: 50%; transform: translateY(-50%); width: 79px; height: 106px; background: url(forsaken.webp) center / contain no-repeat; opacity: .32; pointer-events: none; }
+.ev-banner-go { position: relative; z-index: 1; }
+.ev-banner-go { all: unset; box-sizing: border-box; display: grid; gap: 2px; width: 100%; padding: 9px 30px 9px 12px; cursor: pointer; border-radius: 8px; }
+.ev-banner-go:focus-visible { outline: 2px solid #8b3dff; outline-offset: 3px; }
+.ev-banner-kick { font: 700 10.5px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: #6a2bd0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ev-banner-title { font: 700 15px/1.15 var(--font-display); color: #2a0d4a; }
+.ev-banner-txt { font: 500 12.5px/1.25 var(--font-body); color: #4a3626; }
+.ev-banner-host { display: inline-flex; align-items: center; gap: 3px; margin-top: 3px; font: 700 12.5px var(--font-body); color: #7b1e2b; }
+.ev-banner-host svg, .ev-banner-x svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ev-banner-host svg { transition: transform .2s ease; }
+.ev-banner-go:hover .ev-banner-host svg { transform: translateX(2px); }
+.ev-banner-x { position: absolute; top: 7px; right: 7px; z-index: 4; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px; background: rgba(139, 61, 255, .14); color: #4a1d8a; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.ev-banner-x:hover { background: rgba(139, 61, 255, .26); }
+@media (max-width: 560px) { .ev-banner { width: min(220px, calc(100% - 100px)); } .ev-banner-title { font-size: 13.5px; } .ev-banner-txt { font-size: 11.5px; } }
+.ev-fx, .card > .ev-fx { position: absolute; pointer-events: none; overflow: visible; z-index: 3; } /* .card > :not(.card-close) lo volvía relative y la ficha crecía sin fin */
+
+/* ---------- Bracket del torneo (torneo.js) ---------- */
+/* oscuro con los colores del mapa: fondo marrón del globo, oro de las tierras y pergamino; nombres en el color de su clase de WoW */
+.bk-open, .bk {
+  --bk-bg-a: #3a2a1d; --bk-bg-b: #120b07; --bk-card: rgba(24, 15, 9, .78); --bk-card-hi: rgba(224, 181, 83, .14);
+  --bk-gold: #e0b553; --bk-gold-soft: rgba(224, 181, 83, .42); --bk-line: rgba(224, 181, 83, .32);
+  --bk-fg: #f3e6c8; --bk-muted: #a8957a; --bk-ok: #7fd36b; --bk-ko: #d4544a; --bk-silver: #c9ced4; --bk-bronze: #c98a4b;
+}
+/* botón flotante arriba a la derecha del globo; el contador de streamers pasa debajo */
+.bk-open { position: absolute; z-index: 6; right: calc(14px + env(safe-area-inset-right, 0px)); top: calc(14px + env(safe-area-inset-top, 0px));
+  display: inline-flex; align-items: center; gap: 5px; padding: 7px 11px 7px 14px; border-radius: 999px; cursor: pointer;
+  background: linear-gradient(180deg, #2c1f15, #160e08); color: var(--bk-gold); border: 1.5px solid var(--bk-gold-soft);
+  box-shadow: 0 0 0 1px #0b0704, 0 6px 16px rgba(10, 5, 2, .55), inset 0 1px 0 rgba(255, 230, 170, .12);
+  font: 700 12.5px var(--font-display); letter-spacing: .05em; white-space: nowrap; text-shadow: 0 1px 2px #000; }
+.bk-open[hidden] { display: none; }
+.bk-open svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s ease; }
+.bk-open:hover { border-color: var(--bk-gold); }
+.bk-open:hover svg { transform: translateX(2px); }
+.bk-open:focus-visible { outline: 2px solid var(--bk-gold); outline-offset: 3px; }
+.stage .count { top: calc(54px + env(safe-area-inset-top, 0px)); }
+body.preview .stage .count { top: calc(94px + env(safe-area-inset-top, 0px)); }
+body.preview .bk-open { top: calc(56px + env(safe-area-inset-top, 0px)); }
+
+.bk { position: fixed; inset: 0; z-index: 60; background: rgba(6, 3, 1, .72); display: flex; align-items: center; justify-content: center;
+  padding: max(12px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); }
+.bk[hidden] { display: none; }
+.bk-panel { width: min(1180px, 100%); max-height: 100%; overflow: auto; color: var(--bk-fg); border: 1.5px solid var(--bk-gold-soft); border-radius: 14px;
+  background: radial-gradient(120% 70% at 50% 0%, rgba(224, 181, 83, .10), transparent 60%), radial-gradient(90% 80% at 50% 40%, var(--bk-bg-a), var(--bk-bg-b));
+  box-shadow: 0 0 0 1px #0b0704, 0 22px 50px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 230, 170, .08);
+  padding: 20px 22px 22px; display: flex; flex-direction: column; gap: 16px; scrollbar-color: var(--bk-gold-soft) transparent; }
+.bk-head { display: flex; align-items: flex-start; gap: 12px; }
+.bk-tit { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.bk-kick { font: 700 11px var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--bk-muted); }
+.bk-tit h2 { margin: 0; font: 700 clamp(19px, 2.6vw, 27px)/1.15 var(--font-display); color: var(--bk-gold); text-wrap: balance; text-shadow: 0 2px 6px rgba(0, 0, 0, .8); }
+.bk-x { flex: none; width: 32px; height: 32px; border: 1px solid var(--bk-line); border-radius: 999px; background: rgba(0, 0, 0, .3); color: var(--bk-gold); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.bk-x:hover { border-color: var(--bk-gold); }
+.bk-x svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.bk-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 12px; border-bottom: 1px solid var(--bk-line); }
+.bk-tab { border: 1px solid var(--bk-line); background: rgba(0, 0, 0, .28); color: var(--bk-fg); border-radius: 999px; padding: 6px 14px; font: 600 13.5px var(--font-body); cursor: pointer; white-space: nowrap; }
+.bk-tab:hover { border-color: var(--bk-gold); }
+.bk-tab[aria-selected="true"] { background: linear-gradient(180deg, #f0cb72, #b8862f); border-color: var(--bk-gold); color: #1c1006; font-weight: 700; }
+.bk-tab.is-final { font-family: var(--font-display); font-weight: 700; color: var(--bk-gold); }
+.bk-tab.is-final[aria-selected="true"] { color: #1c1006; }
+.bk-tab.is-add { border-style: dashed; color: var(--bk-muted); }
+.bk-tab:focus-visible, .bk-x:focus-visible, .bk-btn:focus-visible { outline: 2px solid var(--bk-gold); outline-offset: 2px; }
+.bk-body { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+/* llave: columnas por ronda unidas con líneas doradas */
+.bk-scroll { overflow-x: auto; padding: 2px 2px 8px; scrollbar-color: var(--bk-gold-soft) transparent; }
+.bk-grid { --gap: 30px; display: flex; gap: var(--gap); min-width: min-content; }
+.bk-col { display: flex; flex-direction: column; gap: 10px; width: 214px; flex: none; }
+.bk-col.is-p3 { margin-left: 12px; }
+.bk-h { font: 700 12px var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--bk-gold); text-align: center; text-shadow: 0 1px 3px #000; }
+.bk-list { flex: 1; display: flex; flex-direction: column; }
+.bk-pair { flex: 1; display: flex; flex-direction: column; position: relative; }
+.bk-slot { flex: 1; display: flex; flex-direction: column; justify-content: center; position: relative; padding: 6px 0; }
+.bk-pair > .bk-slot::after { content: ""; position: absolute; left: 100%; top: 50%; width: calc(var(--gap) / 2); border-top: 1px solid var(--bk-line); }
+.bk-pair::after { content: ""; position: absolute; left: calc(100% + var(--gap) / 2); top: 25%; bottom: 25%; border-left: 1px solid var(--bk-line); }
+.bk-pair::before { content: ""; position: absolute; left: calc(100% + var(--gap) / 2); top: 50%; width: calc(var(--gap) / 2); border-top: 1px solid var(--bk-line); }
+
+.bk-m { border: 1px solid var(--bk-line); border-radius: 6px; background: var(--bk-card); overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, .45); }
+.bk-m.is-bye { border-style: dashed; opacity: .7; }
+.bk-p { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 7px; width: 100%; height: 34px; padding: 0 9px 0 6px; font: 700 14px var(--font-body); color: var(--bk-fg); }
+.bk-p + .bk-p { border-top: 1px solid rgba(224, 181, 83, .18); }
+button.bk-p { cursor: pointer; }
+button.bk-p:hover { background: rgba(224, 181, 83, .1); }
+button.bk-p:focus-visible { outline: 2px solid var(--bk-gold); outline-offset: -2px; }
+.bk-ic { flex: none; width: 22px; height: 22px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, .8); box-shadow: 0 0 0 1px var(--bk-gold-soft); object-fit: cover; background: #0e0905; }
+.bk-ic.is-none { display: inline-block; opacity: .55; }
+.bk-n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0, 0, 0, .9); }
+.bk-p.is-win { background: var(--bk-card-hi); }
+.bk-p.is-lose { opacity: .5; }
+.bk-p.is-lose .bk-ic { filter: grayscale(.8); }
+.bk-p.is-tbd .bk-n, .bk-n.is-tbd { color: var(--bk-muted); font-weight: 500; font-style: italic; }
+.bk-ok, .bk-ko { flex: none; width: 13px; height: 13px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bk-ok { stroke: var(--bk-ok); }
+.bk-ko { stroke: var(--bk-ko); }
+/* colores oficiales de las clases de WoW */
+.cl-warrior { color: #c69b6d; } .cl-paladin { color: #f48cba; } .cl-hunter { color: #aad372; } .cl-rogue { color: #fff468; }
+.cl-priest { color: #ffffff; } .cl-shaman { color: #2a8ff0; } .cl-mage { color: #3fc7eb; } .cl-warlock { color: #8788ee; } .cl-druid { color: #ff7c0a; }
+
+.bk-empty { margin: 8px 0; color: var(--bk-muted); font-size: 14.5px; }
+.bk-note { margin: 0; color: var(--bk-muted); font-size: 13px; line-height: 1.45; }
+/* podio de la Gran final */
+.bk-podio { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.bk-pos { --m: var(--bk-bronze); display: grid; gap: 4px; padding: 12px 14px; border-radius: 10px; min-width: 0; background: var(--bk-card);
+  border: 1px solid color-mix(in srgb, var(--m) 55%, transparent); box-shadow: inset 0 3px 0 var(--m), 0 6px 16px rgba(0, 0, 0, .45); }
+.bk-pos.p1 { --m: var(--bk-gold); background: linear-gradient(180deg, rgba(224, 181, 83, .16), var(--bk-card) 70%); }
+.bk-pos.p2 { --m: var(--bk-silver); }
+.bk-pos-n { font: 700 20px var(--font-display); color: var(--m); text-shadow: 0 1px 3px #000; }
+.bk-pos-who { display: flex; align-items: center; gap: 8px; min-width: 0; font: 700 16px var(--font-body); }
+.bk-pos-prize { font: 600 13px var(--font-body); color: var(--bk-muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .bk-podio { grid-template-columns: 1fr; } .bk-panel { padding: 14px; } .bk-col { width: 180px; } .bk-grid { --gap: 22px; } }
+
+/* editor del admin */
+.bk-edit { display: grid; gap: 6px; padding: 14px; border: 1px dashed var(--bk-line); border-radius: 10px; background: rgba(0, 0, 0, .22); }
+.bk-edit h4 { margin: 0 0 2px; font: 700 14px var(--font-display); color: var(--bk-gold); }
+.bk-edit label { font-size: 12.5px; font-weight: 600; color: var(--bk-muted); }
+.bk-edit input, .bk-edit textarea { border: 1px solid var(--bk-line); background: rgba(10, 6, 3, .7); color: var(--bk-fg); border-radius: 8px; padding: 7px 9px; font: inherit; width: 100%; resize: vertical; }
+.bk-edit input:focus, .bk-edit textarea:focus { outline: none; border-color: var(--bk-gold); }
+.bk-edit .err { color: #ef8a80; }
+.bk-edit-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+.bk-edit .confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.bk-btn { border: 1px solid var(--bk-line); background: rgba(0, 0, 0, .3); color: var(--bk-fg); border-radius: 999px; padding: 6px 14px; font: 600 13.5px var(--font-body); cursor: pointer; }
+.bk-btn:hover { border-color: var(--bk-gold); }
+.bk-btn.is-main { background: linear-gradient(180deg, #f0cb72, #b8862f); border-color: var(--bk-gold); color: #1c1006; font-weight: 700; }
+.bk-btn.is-danger { color: #ef8a80; }
